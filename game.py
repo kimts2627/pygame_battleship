@@ -5,24 +5,48 @@ from globals import *
 
 pg.init()
 clock = pg.time.Clock()
-big_font = pg.font.SysFont(None, 80)
-small_font = pg.font.SysFont(None, 40)
-MESSAGE_TITLE = big_font.render("BATTLESHIP", True, (255, 255, 255))
+my_font = pg.font.SysFont('latobold', 40, True, False)
+message_title = my_font.render(TITLE, True, WHITE)
+title_rect = message_title.get_rect()
+title_rect.centerx = round(WIDTH / 2)
+title_rect.y = 510
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 background = pg.image.load('images/background.jpeg')
-pg.display.set_caption('pg~!')
+pg.display.set_caption('BATTLE-SHIP')
 sprite_group = pg.sprite.Group()
+missile_group = pg.sprite.Group()
+
+class Missile(pg.sprite.Sprite):
+    def __init__(self, col, row):
+        pg.sprite.Sprite.__init__(self)
+        self.image = pg.image.load(path.join('images', 'missile.png')).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.x = col
+        self.rect.y = row
+        self._layer = 2
+    def moveto_target(self):
+        print('')
 
 class Ship(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, col, row, direction):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.image.load(path.join('images', 'destroyer.png')).convert_alpha()
+        if direction == 'right': self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
+        self.rect.x = col
+        self.rect.y = row
+        self._layer = 1
+    def attack(self):
+        x = self.rect.x
+        y = self.rect.y
+        missile = Missile(x, y)
+        sprite_group.add(missile)
 
-ship = Ship()
+
+ship = Ship(150, 150, 'left')
 sprite_group.add(ship)
-ship.rect.x = 150
-ship.rect.y = 150
+ship2 = Ship(900, 250, 'right')
+sprite_group.add(ship2)
 
 class Blank(pg.sprite.Sprite):
   def __init__(self, col, row):
@@ -50,9 +74,7 @@ map_data = []
 with open('map.txt', 'r') as file:
     for line in file:
         map_data.append(line.strip('\n').split(' '))
-print(map_data)
 for col in range(0, len(map_data)):
-    print(map_data[col])
     for row in range(0, len(map_data[col][0])):    
         if map_data[col][0][row] == 'o':
             sea = Sea(col, row)
@@ -73,9 +95,15 @@ while not done:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             done = True
+        elif event.type == pg.KEYDOWN:
+            if event.key == pg.K_SPACE:
+                ship.attack()
+    screen.fill(BLACK)
+    
     screen.blit(background, (0, -176))
-    screen.blit(MESSAGE_TITLE, (0, 500))
+    screen.blit(message_title, title_rect)
     sprite_group.draw(screen)
+    missile_group.draw(screen)
     draw_grid()
     pg.display.update()
 pg.quit()
