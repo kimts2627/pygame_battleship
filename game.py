@@ -1,12 +1,14 @@
 import pygame as pg
 import sys
 import random
+import time
 from os import path
 from globals import *
 from ai_blue import *
 from ai_red import *
 
 pg.init()
+map_data = []
 clock = pg.time.Clock()
 turn = 1
 my_font = pg.font.SysFont('latobold', 30, True, False)
@@ -84,6 +86,7 @@ pg.display.set_caption('BATTLE-SHIP')
 def draw_text():
     screen.blit(message_title, title_rect)
     screen.blit(message_new_game, new_game_rect)
+    message_turn = my_font_2.render(TURN + f'{turn}', True, WHITE)
     screen.blit(message_turn, turn_rect)
     screen.blit(message_next_turn, next_turn_rect)
     screen.blit(message_exit_game, exit_game_rect)
@@ -99,88 +102,6 @@ def draw_text():
     screen.blit(message_red_name, red_name_rect)
     message_red_ships = my_font_3.render(LEFT_SHIPS + str(len(red_ships.sprites())), True, WHITE)
     screen.blit(message_red_ships, red_ships_rect)
-
-
-def game_init():
-    ai_blue = MyAi('blue', '김태수')
-    ai_red = MyAi('red', '박태수')
-    ai_blue.ai_init()
-    ai_red.ai_init()
-
-class Missile(pg.sprite.Sprite):
-    def __init__(self, col, row, team, target):
-        pg.sprite.Sprite.__init__(self)
-        self.team = team
-        self.target = target
-        self.image = pg.image.load(path.join('images', 'missile.png')).convert_alpha()
-        if team == 'red': self.image = pg.transform.flip(self.image, True, False)
-        self.rect = self.image.get_rect()
-        self.rect.x = col
-        self.rect.y = row
-        self.speed = 10
-
-    def update(self):
-        print('update!')
-        x = self.target.x + 25
-        y = self.target.y + 25
-        if self.rect.x != x:
-            print(f'x는 {self.rect.x}')
-            if self.rect.x > x:
-                self.rect.x = self.rect.x - self.speed
-            elif self.rect.x < x:
-                self.rect.x = self.rect.x + self.speed
-        if self.rect.y != y:
-            print(f'y는 {self.rect.y}')
-            if self.rect.y > x:
-                self.rect.y = self.rect.y - self.speed
-            elif self.rect.y < x:
-                self.rect.y = self.rect.y + self.speed
-        if self.rect.y == y and self.rect.x == x:
-            print('hit!!!!!!!!!')
-            explode = Explode(x, y)
-            effect_group.add(explode)
-            missile_group.remove(self)
-
-class Explode(pg.sprite.Sprite):
-    def __init__(self, col, row):
-        pg.sprite.Sprite.__init__(self)
-        self.current_img = 1
-        self.image = pg.image.load(path.join('images', 'explode', f'explode{self.current_img}.png')).convert_alpha()
-        self.rect = self.image.get_rect()
-        self.rect.centerx = col
-        self.rect.centery = row
-
-    def update(self):
-        if self.current_img < 16:
-            self.current_img += 1
-        elif self.current_img == 16:
-            effect_group.empty()
-        self.image = pg.image.load(path.join('images', 'explode', f'explode{self.current_img}.png')).convert_alpha()
-
-class Ship(pg.sprite.Sprite):
-    def __init__(self, col, row, team):
-        pg.sprite.Sprite.__init__(self)
-        self.team = team
-        self.image = pg.image.load(path.join('images', 'destroyer.png')).convert_alpha()
-        if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
-        self.rect = self.image.get_rect()
-        self.rect.x = col
-        self.rect.y = row
-        self.status = 'normal'
-
-    def attack(self, target):
-        x = self.rect.centerx
-        y = self.rect.centery
-        missile = Missile(x, y, self.team, target)
-        missile_group.add(missile)
-
-    def mark_to_attacked(self):
-        self.status = 'attacked'
-
-ship = Ship(150, 150, 'blue')
-blue_ships.add(ship)
-ship2 = Ship(900, 250, 'red')
-red_ships.add(ship2)
 
 class Blank(pg.sprite.Sprite):
     def __init__(self, col, row):
@@ -201,42 +122,15 @@ class Sea(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.grid_x
         self.rect.y = self.grid_y
-        self.status = 'normal'
+        self.child = None
 
-    def set_status(self, status):
-        self.status = status
-        print(f'({self.rect.x}, {self.rect.y}) has been attacked.')
+    def set_child(self, target_ship):
+        if target_ship:
+            fire = Fire(self.rect.x, self.rect.y, self)
+            self.child = fire
+            effect_group.add(fire)
+            print(f'({self.rect.x}, {self.rect.y}) has been attacked.')
 
-class MyAi:
-    def __init__(self, team, name):
-        self.team = team
-        self.name = name or 'unnamed'
-        self.ships = []
-
-    # def set_ships_pos(self, ships_pos):
-    #     print('')
-
-    def create_ships(self):
-        SHIPS_POS = [[150, 100], [250, 50], [200, 300], [450, 150]]
-        for i in self.ships:
-            new_ship = Ship(i[0], i[1], self.team)
-            if self.team == 'blue':
-                self.ships.append(new_ship)
-
-    def attack(self):
-        print('')
-
-    def ai_action(self):
-        print('')
-
-    def ai_init(self):
-        self.create_ships()
-        print('')
-
-    def update_status(self, map):
-        print('')
-
-map_data = []
 with open('map.txt', 'r') as file:
     for line in file:
         map_data.append(line.strip('\n').split(' '))
@@ -256,6 +150,153 @@ def draw_grid():
         pg.draw.line(screen, (0, 0, 0, 50), (0, y), (WIDTH, y))
     back_group.draw(screen)
 
+def game_init():
+    ai_blue = MyAi('blue', '김태수')
+    ai_red = MyAi('red', '박태수')
+    ai_blue.ai_init()
+    ai_red.ai_init()
+
+class Missile(pg.sprite.Sprite):
+    def __init__(self, col, row, team, target):
+        pg.sprite.Sprite.__init__(self)
+        self.team = team
+        self.target = target
+        self.image = pg.image.load(path.join('images', 'missile.png')).convert_alpha()
+        if team == 'red': self.image = pg.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect()
+        self.rect.x = col
+        self.rect.y = row
+        self.speed = 10
+        self.curve = 5
+
+    def update(self):
+        print('update!')
+        x = self.target.x + 25
+        y = self.target.y + 25
+        if self.rect.x != x:
+            print(f'x는 {self.rect.x}')
+            if self.rect.x > x:
+                self.rect.x = self.rect.x - self.speed
+            elif self.rect.x < x:
+                self.rect.x = self.rect.x + self.speed
+        if self.rect.y != y:
+            print(f'y는 {self.rect.y}')
+            if self.rect.y > x:
+                self.rect.y = self.rect.y - self.speed
+                self.curve + 5
+            elif self.rect.y < x:
+                self.rect.y = self.rect.y + self.speed
+        if self.rect.y == y and self.rect.x == x:
+            print('hit!!!!!!!!!')
+            explode = Explode(x, y)
+            effect_group.add(explode)
+            missile_group.remove(self)
+
+class Explode(pg.sprite.Sprite):
+    def __init__(self, col, row):
+        pg.sprite.Sprite.__init__(self)
+        self.current_img = 1
+        self.image = pg.image.load(path.join('images', 'explode', f'explode{self.current_img}.png')).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.centerx = col
+        self.rect.centery = row
+        self.animation_time = round(100 / 1600, 2)
+        self.current_time = 0
+
+    def update(self, mt):
+        self.current_time += mt
+        if self.current_time >= self.animation_time:
+            if self.current_img < 16:
+                self.current_img += 1
+            elif self.current_img == 16:
+                effect_group.remove(self)
+            self.image = pg.image.load(path.join('images', 'explode', f'explode{self.current_img}.png')).convert_alpha()
+            self.current_time = 0
+
+class Fire(pg.sprite.Sprite):
+    def __init__(self, col, row, mother):
+        pg.sprite.Sprite.__init__(self)
+        self.mother_block = mother
+        self.current_img = 1
+        self.image = pg.image.load(path.join('images', 'fire', f'fire{self.current_img}.png')).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.centerx = col + 25
+        self.rect.centery = row + 25
+        self.animation_time = round(100 / 400, 2)
+        self.current_time = 0
+
+    def update(self, mt):
+        self.current_time += mt
+        if self.current_time >= self.animation_time:
+            if self.current_img < 4:
+                self.current_img += 1
+            elif self.current_img == 4:
+                self.current_img = 1
+            self.image = pg.image.load(path.join('images', 'fire', f'fire{self.current_img}.png')).convert_alpha()
+            self.current_time = 0
+
+class Ship(pg.sprite.Sprite):
+    def __init__(self, col, row, team):
+        pg.sprite.Sprite.__init__(self)
+        self.team = team
+        self.image = pg.image.load(path.join('images', 'destroyer.png')).convert_alpha()
+        if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect()
+        self.rect.x = col
+        self.rect.y = row
+        self.status = 'normal'
+
+    def attack(self, target):
+        x = self.rect.centerx
+        y = self.rect.centery
+        missile = Missile(x, y, self.team, target)
+        missile_group.add(missile)
+        for i in back_group:
+            if i.rect.x == target.x and i.rect.y == target.y:
+                i.set_child(target)
+
+    def mark_to_attacked(self):
+        self.status = 'attacked'
+
+# ship = Ship(150, 150, 'blue')
+# blue_ships.add(ship)
+ship2 = Ship(900, 250, 'red')
+red_ships.add(ship2)
+
+class MyAi:
+    def __init__(self, team, name, initail_map):
+        self.team = team
+        self.name = name or 'unnamed'
+        self.ships = []
+        self.map = initail_map
+
+    def create_ships(self):
+        SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
+        for i in SHIPS_POS:
+            new_ship = Ship(i[0], i[1], self.team)
+            if self.team == 'blue':
+                self.ships.append(new_ship)
+                blue_ships.add(new_ship)
+            elif self.team == 'red':
+                self.ships.append(new_ship)
+                red_ships.add(new_ship)
+
+    def attack(self):
+        print('')
+
+    def ai_action(self, turn):
+        print('')
+
+    def ai_init(self):
+        self.create_ships()
+        print('')
+
+    def update_status(self):
+        print('')
+
+blue_man = MyAi('blue', 'Taesu Kim', map)
+blue_man.create_ships()
+
 done = False
 while not done:
     clock.tick(FPS)
@@ -264,9 +305,10 @@ while not done:
             done = True
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                ships_num = len(red_ships.sprites())
+                ships_num = len(blue_ships.sprites())
                 ship = blue_ships.sprites()[random.randrange(0, ships_num)]
                 ship.attack(red_ships.sprites()[0].rect)
+                turn += 1
     screen.fill(BLACK)
     
     screen.blit(background, (0, -176))
@@ -277,7 +319,8 @@ while not done:
     missile_group.draw(screen)
     missile_group.update()
     effect_group.draw(screen)
-    effect_group.update()
+    mt = 0.06
+    effect_group.update(mt)
     pg.display.update()
 
 pg.quit()
