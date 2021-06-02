@@ -12,7 +12,7 @@ map_data = []
 clock = pg.time.Clock()
 turn = 0
 _last_position = (0, 0)
-_last_result = ''
+_last_result = 'no'
 # def set_last_position(pos: tuple):
 #     _last_position = pos
 # def set_last_result(result: str):
@@ -277,26 +277,22 @@ class Ship(pg.sprite.Sprite):
         elif self.team == 'red': self.enemy_group = blue_ships
 
     def attack(self, target):
+        global _last_result
+        global _last_position
         x = self.rect.centerx
         y = self.rect.centery
         missile = Missile(x, y, self.team, target)
         missile_group.add(missile)
-        print(target)
         for i in back_group:
-            if i.rect.x == target['x'] and i.rect.y == target['y']:
+            if i.rect.x + 25 == target['x'] and i.rect.y + 25 == target['y']:
                 for j in self.enemy_group:
-                    # global _last_result
-                    # global _last_position
-                    if target['x'] == j.rect.x + 25 and target['y'] == j.rect.y + 25:
+                    if target['x'] == j.rect.x and target['y'] == j.rect.y:
                         i.set_child(target)
                         _last_result = 'hit'
                         _last_position = (target['x'], target['y'])
                     else:
                         _last_result = 'nohit'
                         _last_position = (target['x'], target['y'])
-
-    def mark_to_attacked(self):
-        self.status = 'attacked'
 
 class MyAi:
     def __init__(self, team, name):
@@ -343,11 +339,11 @@ class MyAi:
         blue_ships_num = len(blue_ships.sprites())
         red_ships_num = len(red_ships.sprites())
         if self.team == 'blue':
-            new_x += 25
+            new_x += 725
             new_y += 25
             self.current_ship = blue_ships.sprites()[random.randrange(0, blue_ships_num)]
         elif self.team == 'red':
-            new_x += 725
+            new_x += 25
             new_y += 25
             self.current_ship = red_ships.sprites()[random.randrange(0, red_ships_num)]
         target = {'x': new_x, 'y': new_y}
@@ -365,10 +361,12 @@ class MyAi:
                 self.attacking_order(x, y)
             else:
                 if result[-1]['result'] == 'nohit':
-                    for i in result.reversed():
+                    for i in list(reversed(result)):
                         if i['result'] == 'hit':
                             x = i['position'][0] + 50
                             y = i['position'][1]
+                            self.attacking_order(x, y)
+                        else:
                             self.attacking_order(x, y)
                 elif result[-1]['result'] == 'hit':
                             x = x + 50
@@ -386,7 +384,7 @@ class MyAi:
         print('')
 
     def set_attack_result(self, result, position):
-        self.last_attack_result.append({result: result, position: position})
+        self.last_attack_result.append({'result': result, 'position': position})
         print(f'{self.team} attacked {position} position => {result}')
     
 def generate_user_action_result(attack_position: tuple, team: str):
