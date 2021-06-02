@@ -10,7 +10,13 @@ from ai_red import *
 pg.init()
 map_data = []
 clock = pg.time.Clock()
-turn = 1
+turn = 0
+_last_position = (0, 0)
+_last_result = ''
+# def set_last_position(pos: tuple):
+#     _last_position = pos
+# def set_last_result(result: str):
+#     _last_result = result
 my_font = pg.font.SysFont('latobold', 30, True, False)
 my_font_2 = pg.font.SysFont('latobold', 25, True, False)
 my_font_3 = pg.font.SysFont('latobold', 20, True, False)
@@ -167,12 +173,11 @@ class Missile(pg.sprite.Sprite):
         self.rect.x = col
         self.rect.y = row
         self.speed = 25
-        self.curve = 5
 
     def update(self):
         print('update!')
-        x = self.target.x + 25
-        y = self.target.y + 25
+        x = self.target['x']
+        y = self.target['y']
         #####################################################3
         if self.rect.x != x:
             if self.rect.x > x:
@@ -186,10 +191,33 @@ class Missile(pg.sprite.Sprite):
                 self.rect.y += self.speed
         #####################################################
         if self.rect.y == y and self.rect.x == x:
-            print('hit!!!!!!!!!')
             explode = Explode(x, y)
             effect_group.add(explode)
             missile_group.remove(self)
+        fx = MissileFx(self)
+        missile_group.add(fx)
+
+class MissileFx(pg.sprite.Sprite):
+    def __init__(self, parent):
+        pg.sprite.Sprite.__init__(self)
+        self.parent = parent
+        self.x = self.parent.rect.x
+        self.y = self.parent.rect.y
+        self.image = pg.Surface((self.x, self.y))
+        self.image.fill(GRAY)
+        pg.draw.circle(self.image, GRAY, (self.x // 2, self.y // 2), 5)
+        self.image = pg.transform.scale(self.image, (20, 20))
+        self.rect = self.image.get_rect(centerx = self.x, centery = self.y)
+        self.size = 20
+        self.animation_time = round(100 / 100, 2)
+        self.current_time = 0
+    
+    def update(self):
+        if self.size == 0:
+            missile_group.remove(self)
+        else:
+            self.size -= 5
+            self.image = pg.transform.scale(self.image, (self.size, self.size))
 
 class Explode(pg.sprite.Sprite):
     def __init__(self, col, row):
@@ -244,30 +272,39 @@ class Ship(pg.sprite.Sprite):
         self.rect.x = col
         self.rect.y = row
         self.status = 'normal'
+        self.enemy_group = None
+        if self.team == 'blue': self.enemy_group = red_ships
+        elif self.team == 'red': self.enemy_group = blue_ships
 
     def attack(self, target):
         x = self.rect.centerx
         y = self.rect.centery
         missile = Missile(x, y, self.team, target)
         missile_group.add(missile)
+        print(target)
         for i in back_group:
-            if i.rect.x == target.x and i.rect.y == target.y:
-                i.set_child(target)
+            if i.rect.x == target['x'] and i.rect.y == target['y']:
+                for j in self.enemy_group:
+                    # global _last_result
+                    # global _last_position
+                    if target['x'] == j.rect.x + 25 and target['y'] == j.rect.y + 25:
+                        i.set_child(target)
+                        _last_result = 'hit'
+                        _last_position = (target['x'], target['y'])
+                    else:
+                        _last_result = 'nohit'
+                        _last_position = (target['x'], target['y'])
 
     def mark_to_attacked(self):
         self.status = 'attacked'
 
-# ship = Ship(150, 150, 'blue')
-# blue_ships.add(ship)
-# ship2 = Ship(900, 250, 'red')
-# red_ships.add(ship2)
-
 class MyAi:
-    def __init__(self, team, name, initail_map):
+    def __init__(self, team, name):
         self.team = team
         self.name = name or 'unnamed'
         self.ships = []
-        self.map = initail_map
+        self.current_ship = None
+        self.last_attack_result = []
 
     def create_ships(self):
         if self.team == 'blue':
@@ -279,29 +316,91 @@ class MyAi:
         elif self.team == 'red':
             SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
             SHIPS_POS = list(map(lambda i : [i[0] + 700, i[1]], SHIPS_POS))
-            print(SHIPS_POS)
             for i in SHIPS_POS:
                 new_ship = Ship(i[0], i[1], self.team)
                 self.ships.append(new_ship)
                 red_ships.add(new_ship)
 
-    def attack(self):
-        print('')
+    def attacking_order(self, x: int, y: int):
+        #! 입력 좌표가 최대값(450)을 넘어가면 450으로 보정
+        #! 0이나 50의 배수가 아니라면, 입력값과 가장 가까운 50의 배수로 보정(내림)
+        new_x = x
+        new_y = y
+        if new_x > 450:
+            new_x = 450
+        elif new_x != 0 and new_x % 50 != 0:
+            if new_x < 50:
+                new_x = 0
+            else:
+                new_x -= (new_x % 50)
+        if new_y > 450:
+            new_y = 450
+        elif new_y != 0 and new_y % 50 != 0:
+            if new_y < 50:
+                new_y = 0
+            else:
+                new_y -= (new_y % 50)
+        blue_ships_num = len(blue_ships.sprites())
+        red_ships_num = len(red_ships.sprites())
+        if self.team == 'blue':
+            new_x += 25
+            new_y += 25
+            self.current_ship = blue_ships.sprites()[random.randrange(0, blue_ships_num)]
+        elif self.team == 'red':
+            new_x += 725
+            new_y += 25
+            self.current_ship = red_ships.sprites()[random.randrange(0, red_ships_num)]
+        target = {'x': new_x, 'y': new_y}
+        self.current_ship.attack(target)
 
     def ai_action(self, turn):
-        print('')
+    #############################* USER CODE HERE * ###################################### 
+        x = random.randint(0, 450)
+        y = random.randint(0, 450)
+        result = self.last_attack_result
+        if turn == 1:
+            self.attacking_order(x, y)
+        else:
+            if len(result) == 0:
+                self.attacking_order(x, y)
+            else:
+                if result[-1]['result'] == 'nohit':
+                    for i in result.reversed():
+                        if i['result'] == 'hit':
+                            x = i['position'][0] + 50
+                            y = i['position'][1]
+                            self.attacking_order(x, y)
+                elif result[-1]['result'] == 'hit':
+                            x = x + 50
+                            self.attacking_order(x, y)
+
+    #! Don't edit global variable / constant or Fn
+    # Attack Function is self.attacking_order(x: int, y: int) -> void
+    # 'x' or 'y' position must be 0 ~ 450 and also multiple of fifty
+    # Position value will auto adjustment, if position value over 450 or not multiple of fifty
+    # Your attacking order's result will be in self.last_attack_result list ([{position: tuple, result: str} ... {position: tuple, result: str}])     
+    #############################* USER CODE HERE * ###################################### 
 
     def ai_init(self):
         self.create_ships()
         print('')
 
-    def update_status(self):
-        print('')
+    def set_attack_result(self, result, position):
+        self.last_attack_result.append({result: result, position: position})
+        print(f'{self.team} attacked {position} position => {result}')
+    
+def generate_user_action_result(attack_position: tuple, team: str):
+    if team == 'blue':
+        for i in blue_ships:
+            if i.rect.x == attack_position[0] and i.rect.y == attack_position[1]:
+                return 'hit'
+            else:
+                return 'nohit'
 
-blue_man = MyAi('blue', 'Taesu Kim', map_data)
-blue_man.create_ships()
-red_man = MyAi('red', 'Taesu Park', map_data)
-red_man.create_ships()
+blue_man = MyAi('blue', 'Taesu Kim')
+blue_man.ai_init()
+red_man = MyAi('red', 'Taesu Park')
+red_man.ai_init()
 
 done = False
 while not done:
@@ -311,11 +410,14 @@ while not done:
             done = True
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                blue_ships_num = len(blue_ships.sprites())
-                red_ships_num = len(red_ships.sprites())
-                ship = blue_ships.sprites()[random.randrange(0, blue_ships_num)]
-                ship.attack(red_ships.sprites()[random.randrange(0, red_ships_num)].rect)
                 turn += 1
+                print(f'{turn} turn!')
+                blue_man.ai_action(turn)
+                blue_man.set_attack_result(_last_result, _last_position)
+                print(_last_position, _last_result)
+                red_man.ai_action(turn)
+                red_man.set_attack_result(_last_result, _last_position)
+                print(_last_position, _last_result)
     screen.fill(BLACK)
     
     screen.blit(background, (0, -176))
