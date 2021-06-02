@@ -1,7 +1,7 @@
 import pygame as pg
 import sys
 import random
-import time
+from math import cos, sin, floor
 from os import path
 from globals import *
 from ai_blue import *
@@ -166,26 +166,25 @@ class Missile(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = col
         self.rect.y = row
-        self.speed = 10
+        self.speed = 25
         self.curve = 5
 
     def update(self):
         print('update!')
         x = self.target.x + 25
         y = self.target.y + 25
+        #####################################################3
         if self.rect.x != x:
-            print(f'x는 {self.rect.x}')
             if self.rect.x > x:
-                self.rect.x = self.rect.x - self.speed
+                self.rect.x -= self.speed
             elif self.rect.x < x:
-                self.rect.x = self.rect.x + self.speed
+                self.rect.x += self.speed
         if self.rect.y != y:
-            print(f'y는 {self.rect.y}')
-            if self.rect.y > x:
-                self.rect.y = self.rect.y - self.speed
-                self.curve + 5
-            elif self.rect.y < x:
-                self.rect.y = self.rect.y + self.speed
+            if self.rect.y > y:
+                self.rect.y -= self.speed
+            elif self.rect.y < y:
+                self.rect.y += self.speed
+        #####################################################
         if self.rect.y == y and self.rect.x == x:
             print('hit!!!!!!!!!')
             explode = Explode(x, y)
@@ -260,8 +259,8 @@ class Ship(pg.sprite.Sprite):
 
 # ship = Ship(150, 150, 'blue')
 # blue_ships.add(ship)
-ship2 = Ship(900, 250, 'red')
-red_ships.add(ship2)
+# ship2 = Ship(900, 250, 'red')
+# red_ships.add(ship2)
 
 class MyAi:
     def __init__(self, team, name, initail_map):
@@ -271,13 +270,18 @@ class MyAi:
         self.map = initail_map
 
     def create_ships(self):
-        SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
-        for i in SHIPS_POS:
-            new_ship = Ship(i[0], i[1], self.team)
-            if self.team == 'blue':
+        if self.team == 'blue':
+            SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
+            for i in SHIPS_POS:
+                new_ship = Ship(i[0], i[1], self.team)
                 self.ships.append(new_ship)
                 blue_ships.add(new_ship)
-            elif self.team == 'red':
+        elif self.team == 'red':
+            SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
+            SHIPS_POS = list(map(lambda i : [i[0] + 700, i[1]], SHIPS_POS))
+            print(SHIPS_POS)
+            for i in SHIPS_POS:
+                new_ship = Ship(i[0], i[1], self.team)
                 self.ships.append(new_ship)
                 red_ships.add(new_ship)
 
@@ -294,8 +298,10 @@ class MyAi:
     def update_status(self):
         print('')
 
-blue_man = MyAi('blue', 'Taesu Kim', map)
+blue_man = MyAi('blue', 'Taesu Kim', map_data)
 blue_man.create_ships()
+red_man = MyAi('red', 'Taesu Park', map_data)
+red_man.create_ships()
 
 done = False
 while not done:
@@ -305,9 +311,10 @@ while not done:
             done = True
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                ships_num = len(blue_ships.sprites())
-                ship = blue_ships.sprites()[random.randrange(0, ships_num)]
-                ship.attack(red_ships.sprites()[0].rect)
+                blue_ships_num = len(blue_ships.sprites())
+                red_ships_num = len(red_ships.sprites())
+                ship = blue_ships.sprites()[random.randrange(0, blue_ships_num)]
+                ship.attack(red_ships.sprites()[random.randrange(0, red_ships_num)].rect)
                 turn += 1
     screen.fill(BLACK)
     
