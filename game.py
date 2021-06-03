@@ -13,10 +13,7 @@ clock = pg.time.Clock()
 turn = 0
 _last_position = (0, 0)
 _last_result = 'no'
-# def set_last_position(pos: tuple):
-#     _last_position = pos
-# def set_last_result(result: str):
-#     _last_result = result
+
 my_font = pg.font.SysFont('latobold', 30, True, False)
 my_font_2 = pg.font.SysFont('latobold', 25, True, False)
 my_font_3 = pg.font.SysFont('latobold', 20, True, False)
@@ -176,10 +173,8 @@ class Missile(pg.sprite.Sprite):
         self.speed = 25
 
     def update(self):
-        print('update!')
         x = self.target['x']
         y = self.target['y']
-        #####################################################3
         if self.rect.x != x:
             if self.rect.x > x:
                 self.rect.x -= self.speed
@@ -190,7 +185,6 @@ class Missile(pg.sprite.Sprite):
                 self.rect.y -= self.speed
             elif self.rect.y < y:
                 self.rect.y += self.speed
-        #####################################################
         if self.rect.y == y and self.rect.x == x:
             explode = Explode(x, y)
             effect_group.add(explode)
@@ -263,6 +257,46 @@ class Fire(pg.sprite.Sprite):
             self.image = pg.image.load(path.join('images', 'fire', f'fire{self.current_img}.png')).convert_alpha()
             self.current_time = 0
 
+def generate_user_action_result(attack_position: tuple, team: str):
+    global map_data
+    map_y = int(attack_position[0] / 50)
+    map_x = int(attack_position[1] / 50)
+
+    def find_hitted_ship(attack_position, ship_group):
+        x = attack_position[0]
+        y = attack_position[1]
+        for i in ship_group.sprites():
+            for j in range(0, 4):
+                if i.direction == 'horizontal':
+                    if i.rect.x + (50 * j) == x and i.rect.y == y:
+                        return i
+                elif i.direction == 'vertical':
+                    if i.rect.x == x and i.rect.y + (50 * j) == y:
+                        return i
+
+    if team == 'blue':
+        if map_data[map_x][map_y] == '2':
+            map_data[map_x] = map_data[map_x][0:map_y] + '3' + map_data[map_x][map_y+1:]
+            attacked_ship = find_hitted_ship(attack_position, red_ships)
+            attacked_ship.hit_count += 1
+            return 'hit'
+        elif map_data[map_x][map_y] == 'o':
+            map_data[map_x] = map_data[map_x][0:map_y] + 'x' + map_data[map_x][map_y+1:]
+            return 'nohit'
+        else:
+            return 'nohit'
+    elif team == 'red':
+        if map_data[map_x][map_y] == '1':
+            map_data[map_x] = map_data[map_x][0:map_y] + '3' + map_data[map_x][map_y+1:]
+            attacked_ship = find_hitted_ship(attack_position, blue_ships)
+            attacked_ship.hit_count += 1
+            return 'hit'
+        elif map_data[map_x][map_y] == 'o':
+            map_data[map_x] = map_data[map_x][0:map_y] + 'x' + map_data[map_x][map_y+1:]
+            return 'nohit'
+        else:
+            return 'nohit'
+
 class Ship(pg.sprite.Sprite):
     def __init__(self, col, row, team, direction):
         pg.sprite.Sprite.__init__(self)
@@ -277,6 +311,7 @@ class Ship(pg.sprite.Sprite):
         self.enemy_group = None
         if self.team == 'blue': self.enemy_group = red_ships
         elif self.team == 'red': self.enemy_group = blue_ships
+        self.hit_count = 0
 
     def attack(self, target):
         global _last_result
@@ -285,16 +320,18 @@ class Ship(pg.sprite.Sprite):
         y = self.rect.centery
         missile = Missile(x, y, self.team, target)
         missile_group.add(missile)
-        for i in back_group:
-            if i.rect.x + 25 == target['x'] and i.rect.y + 25 == target['y']:
-                for j in self.enemy_group:
-                    if target['x'] == j.rect.x and target['y'] == j.rect.y:
-                        i.set_child(target)
-                        _last_result = 'hit'
-                        _last_position = (target['x'], target['y'])
-                    else:
-                        _last_result = 'nohit'
-                        _last_position = (target['x'], target['y'])
+        _last_position = (target['x'] - 25, target['y'] - 25)
+        _last_result = generate_user_action_result(_last_position, self.team)
+        # for i in back_group:
+        #     if i.rect.x + 25 == target['x'] and i.rect.y + 25 == target['y']:
+        #         for j in self.enemy_group:
+        #             if target['x'] == j.rect.x and target['y'] == j.rect.y:
+        #                 i.set_child(target)
+        #                 _last_position = (target['x'], target['y'])
+        #                 _last_result = generate_user_action_result()
+        #             else:
+        #                 _last_result = 'nohit'
+        #                 _last_position = (target['x'], target['y'])
 
 class MyAi:
     def __init__(self, team, name):
@@ -395,7 +432,6 @@ class MyAi:
                             y = int(y / 50)
                         for j in range(0, 5):
                             map_data[y+j] = map_data[y+j][0:x] + '2' + map_data[y+j][x+1:]
-        print(map_data)
 
     def attacking_order(self, x: int, y: int):
         #! 입력 좌표가 최대값(450)을 넘어가면 450으로 보정
@@ -418,6 +454,7 @@ class MyAi:
                 new_y -= (new_y % 50)
         blue_ships_num = len(blue_ships.sprites())
         red_ships_num = len(red_ships.sprites())
+
         if self.team == 'blue':
             new_x += 725
             new_y += 25
@@ -437,9 +474,6 @@ class MyAi:
         if turn == 1:
             self.attacking_order(x, y)
         else:
-            # if len(result) == 0:
-            #     self.attacking_order(x, y)
-            # else:
             if result[-1]['result'] == 'nohit':
                 for i in list(reversed(result)):
                     if i['result'] == 'hit':
@@ -461,19 +495,22 @@ class MyAi:
 
     def ai_init(self):
         self.create_ships()
-        print('')
 
     def set_attack_result(self, result, position):
         self.last_attack_result.append({'result': result, 'position': position})
         print(f'{self.team} attacked {position} position => {result}')
-    
-def generate_user_action_result(attack_position: tuple, team: str):
-    if team == 'blue':
-        for i in blue_ships:
-            if i.rect.x == attack_position[0] and i.rect.y == attack_position[1]:
-                return 'hit'
-            else:
-                return 'nohit'
+
+def ship_hit_checker(blue_group, red_group):
+    blues = blue_group.sprites()
+    reds = red_group.sprites()
+    for i in blues:
+        if i.hit_count == 5:
+            blue_group.remove(i)
+            print('blue team ship is sink down!')
+    for i in reds:
+        if i.hit_count == 5:
+            red_group.remove(i)
+            print('red team ship is sink down!')
 
 blue_man = MyAi('blue', 'Taesu Kim')
 blue_man.ai_init()
@@ -494,10 +531,9 @@ while not done:
                 print(f'********************************************************')
                 blue_man.ai_action(turn)
                 blue_man.set_attack_result(_last_result, _last_position)
-                print(_last_position, _last_result)
                 red_man.ai_action(turn)
                 red_man.set_attack_result(_last_result, _last_position)
-                print(_last_position, _last_result)
+                ship_hit_checker(blue_ships, red_ships)
     screen.fill(BLACK)
     
     screen.blit(background, (0, -176))
