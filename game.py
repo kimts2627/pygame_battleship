@@ -314,7 +314,6 @@ class MyAi:
                y = int(y / 50)
             try:
                 print(x, y)
-                # if map_data[x][y] == 'o' and map_data[x][y+1] == 'o' and map_data[x][y+2] == 'o' and map_data[x][y+3] == 'o' and map_data[x][y+4] == 'o':
                 if map_data[y][x] == 'o' and map_data[y][x+1] == 'o' and map_data[y][x+2] == 'o' and map_data[y][x+3] == 'o' and map_data[y][x+4] == 'o':
                     return True
                 else: 
@@ -330,7 +329,6 @@ class MyAi:
             if y != 0:
                y = int(y / 50)
             try:
-                # if map_data[x][y] == 'o' and map_data[x+1][y] == 'o' and map_data[x+2][y] == 'o' and map_data[x+3][y] == 'o' and map_data[x+4][y] == 'o':
                 if map_data[y][x] == 'o' and map_data[y+1][x] == 'o' and map_data[y+2][x] == 'o' and map_data[y+3][x] == 'o' and map_data[y+4][x] == 'o':
                     return True
                 else:
@@ -398,7 +396,6 @@ class MyAi:
                         for j in range(0, 5):
                             map_data[y+j] = map_data[y+j][0:x] + '2' + map_data[y+j][x+1:]
         print(map_data)
-        # print(blue_ships.sprites()[0].rect, blue_ships.sprites()[1].rect, blue_ships.sprites()[2].rect, blue_ships.sprites()[3].rect)
 
     def attacking_order(self, x: int, y: int):
         #! 입력 좌표가 최대값(450)을 넘어가면 450으로 보정
@@ -440,20 +437,20 @@ class MyAi:
         if turn == 1:
             self.attacking_order(x, y)
         else:
-            if len(result) == 0:
+            # if len(result) == 0:
+            #     self.attacking_order(x, y)
+            # else:
+            if result[-1]['result'] == 'nohit':
+                for i in list(reversed(result)):
+                    if i['result'] == 'hit':
+                        x = i['position'][0] + 50
+                        y = i['position'][1]
+                        self.attacking_order(x, y)
+                        break
                 self.attacking_order(x, y)
-            else:
-                if result[-1]['result'] == 'nohit':
-                    for i in list(reversed(result)):
-                        if i['result'] == 'hit':
-                            x = i['position'][0] + 50
-                            y = i['position'][1]
-                            self.attacking_order(x, y)
-                        else:
-                            self.attacking_order(x, y)
-                elif result[-1]['result'] == 'hit':
-                            x = x + 50
-                            self.attacking_order(x, y)
+            elif result[-1]['result'] == 'hit':
+                        x = x + 50
+                        self.attacking_order(x, y)
 
     #! Don't edit global variable / constant or Fn
     # Attack Function is self.attacking_order(x: int, y: int) -> void
@@ -492,7 +489,9 @@ while not done:
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 turn += 1
-                print(f'**********************{turn} turn!**********************')
+                print(f'********************************************************')
+                print(f'************************{turn} turn!*************************')
+                print(f'********************************************************')
                 blue_man.ai_action(turn)
                 blue_man.set_attack_result(_last_result, _last_position)
                 print(_last_position, _last_result)
