@@ -1,7 +1,7 @@
 import pygame as pg
 import sys
 import random
-from math import cos, sin, floor
+from math import cos, e, sin, floor
 from os import path
 from globals import *
 from ai_blue import *
@@ -140,12 +140,13 @@ class Sea(pg.sprite.Sprite):
 with open('map.txt', 'r') as file:
     for line in file:
         map_data.append(line.strip('\n').split(' '))
+map_data = list(map(lambda x: x[0], map_data))
 for col in range(0, len(map_data)):
-    for row in range(0, len(map_data[col][0])):    
-        if map_data[col][0][row] == 'o':
+    for row in range(0, len(map_data[col])):    
+        if map_data[col][row] == 'o':
             sea = Sea(col, row)
             back_group.add(sea)
-        if map_data[col][0][row] == 'x':
+        if map_data[col][row] == 'x':
             blank = Blank(col, row)
             back_group.add(blank)
 
@@ -263,7 +264,7 @@ class Fire(pg.sprite.Sprite):
             self.current_time = 0
 
 class Ship(pg.sprite.Sprite):
-    def __init__(self, col, row, team):
+    def __init__(self, col, row, team, direction):
         pg.sprite.Sprite.__init__(self)
         self.team = team
         self.image = pg.image.load(path.join('images', 'destroyer.png')).convert_alpha()
@@ -271,7 +272,8 @@ class Ship(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = col
         self.rect.y = row
-        self.status = 'normal'
+        self.direction = direction
+        if self.direction == 'vertical': self.image = pg.transform.rotate(self.image, 90)
         self.enemy_group = None
         if self.team == 'blue': self.enemy_group = red_ships
         elif self.team == 'red': self.enemy_group = blue_ships
@@ -303,19 +305,100 @@ class MyAi:
         self.last_attack_result = []
 
     def create_ships(self):
+        global map_data
+
+        def is_valied_hori(x, y):
+            if x != 0:
+               x = int(x / 50)
+            if y != 0:
+               y = int(y / 50)
+            try:
+                print(x, y)
+                # if map_data[x][y] == 'o' and map_data[x][y+1] == 'o' and map_data[x][y+2] == 'o' and map_data[x][y+3] == 'o' and map_data[x][y+4] == 'o':
+                if map_data[y][x] == 'o' and map_data[y][x+1] == 'o' and map_data[y][x+2] == 'o' and map_data[y][x+3] == 'o' and map_data[y][x+4] == 'o':
+                    return True
+                else: 
+                    print(f'{(x*50, y*50)} hori 씹혔어요')
+                    return False
+            except IndexError:
+                print(f'{(x*50, y*50)} hori 씹혔어요')
+                return False
+
+        def is_valied_verti(x, y):
+            if x != 0:
+               x = int(x / 50)
+            if y != 0:
+               y = int(y / 50)
+            try:
+                # if map_data[x][y] == 'o' and map_data[x+1][y] == 'o' and map_data[x+2][y] == 'o' and map_data[x+3][y] == 'o' and map_data[x+4][y] == 'o':
+                if map_data[y][x] == 'o' and map_data[y+1][x] == 'o' and map_data[y+2][x] == 'o' and map_data[y+3][x] == 'o' and map_data[y+4][x] == 'o':
+                    return True
+                else:
+                    print(f'{(x*50, y*50)} vertical 씹혔어요')
+                    return False
+            except IndexError:
+                print(f'{(x*50, y*50)} vertical 씹혔어요')
+                return False
+
         if self.team == 'blue':
-            SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
+            SHIPS_POS = [[150, 100], [50, 100], [200, 300], [0, 450]]
             for i in SHIPS_POS:
-                new_ship = Ship(i[0], i[1], self.team)
-                self.ships.append(new_ship)
-                blue_ships.add(new_ship)
+                if is_valied_hori(i[0], i[1]) == True:
+                    new_ship = Ship(i[0], i[1], self.team, 'horizontal')
+                    self.ships.append(new_ship)
+                    blue_ships.add(new_ship)
+                    x = i[0]
+                    y = i[1]
+                    if x != 0:
+                        x = int(x / 50)
+                    if y != 0:
+                        y = int(y / 50)
+                    for j in range(0, 5):
+                        map_data[y] = map_data[y][0:x+j] + '1' + map_data[y][x+j+1:]
+                else:
+                    if is_valied_verti(i[0], i[1]) == True:
+                        new_ship = Ship(i[0], i[1], self.team, 'vertical')
+                        self.ships.append(new_ship)
+                        blue_ships.add(new_ship)
+                        x = i[0]
+                        y = i[1]
+                        if x != 0:
+                            x = int(x / 50)
+                        if y != 0:
+                            y = int(y / 50)
+                        for j in range(0, 5):
+                            map_data[y+j] = map_data[y+j][0:x] + '1' + map_data[y+j][x+1:]
         elif self.team == 'red':
             SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
             SHIPS_POS = list(map(lambda i : [i[0] + 700, i[1]], SHIPS_POS))
             for i in SHIPS_POS:
-                new_ship = Ship(i[0], i[1], self.team)
-                self.ships.append(new_ship)
-                red_ships.add(new_ship)
+                if is_valied_hori(i[0], i[1]) == True:
+                    new_ship = Ship(i[0], i[1], self.team, 'horizontal')
+                    self.ships.append(new_ship)
+                    red_ships.add(new_ship)
+                    x = i[0]
+                    y = i[1]
+                    if x != 0:
+                        x = int(x / 50)
+                    if y != 0:
+                        y = int(y / 50)
+                    for j in range(0, 5):
+                        map_data[y] = map_data[y][0:x+j] + '2' + map_data[y][x+j+1:]
+                else:
+                    if is_valied_verti(i[0], i[1]) == True:
+                        new_ship = Ship(i[0], i[1], self.team, 'vertical')
+                        self.ships.append(new_ship)
+                        red_ships.add(new_ship)
+                        x = i[0]
+                        y = i[1]
+                        if x != 0:
+                            x = int(x / 50)
+                        if y != 0:
+                            y = int(y / 50)
+                        for j in range(0, 5):
+                            map_data[y+j] = map_data[y+j][0:x] + '2' + map_data[y+j][x+1:]
+        print(map_data)
+        # print(blue_ships.sprites()[0].rect, blue_ships.sprites()[1].rect, blue_ships.sprites()[2].rect, blue_ships.sprites()[3].rect)
 
     def attacking_order(self, x: int, y: int):
         #! 입력 좌표가 최대값(450)을 넘어가면 450으로 보정
@@ -409,7 +492,7 @@ while not done:
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 turn += 1
-                print(f'{turn} turn!')
+                print(f'**********************{turn} turn!**********************')
                 blue_man.ai_action(turn)
                 blue_man.set_attack_result(_last_result, _last_position)
                 print(_last_position, _last_result)

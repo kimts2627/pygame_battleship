@@ -22,6 +22,3 @@ BLUE_TEAM = "BLUE"
 RED_TEAM = "RED"
 LEFT_SHIPS = "Ships : "
 PLAYER_NAME = "Name : "
-
-# a = {'x': 123, 'y': 222}
-# print(a[x])
