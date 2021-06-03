@@ -154,11 +154,11 @@ def draw_grid():
         pg.draw.line(screen, (0, 0, 0, 50), (0, y), (WIDTH, y))
     back_group.draw(screen)
 
-def game_init():
-    ai_blue = MyAi('blue', '김태수')
-    ai_red = MyAi('red', '박태수')
-    ai_blue.ai_init()
-    ai_red.ai_init()
+# def game_init():
+#     ai_blue = MyAi('blue', '김태수')
+#     ai_red = MyAi('red', '박태수')
+#     ai_blue.ai_init()
+#     ai_red.ai_init()
 
 class Missile(pg.sprite.Sprite):
     def __init__(self, col, row, team, target):
@@ -265,7 +265,9 @@ def generate_user_action_result(attack_position: tuple, team: str):
     def find_hitted_ship(attack_position, ship_group):
         x = attack_position[0]
         y = attack_position[1]
+        print(x, y)
         for i in ship_group.sprites():
+            print(i.rect, i.direction)
             for j in range(0, 4):
                 if i.direction == 'horizontal':
                     if i.rect.x + (50 * j) == x and i.rect.y == y:
@@ -454,7 +456,7 @@ class MyAi:
                 new_y -= (new_y % 50)
         blue_ships_num = len(blue_ships.sprites())
         red_ships_num = len(red_ships.sprites())
-
+        print(f'{self.team} => {x} {y}')
         if self.team == 'blue':
             new_x += 725
             new_y += 25
@@ -467,24 +469,23 @@ class MyAi:
         self.current_ship.attack(target)
 
     def ai_action(self, turn):
-    #############################* USER CODE HERE * ###################################### 
+    #############################* USER CODE HERE *###################################### 
         x = random.randint(0, 450)
         y = random.randint(0, 450)
         result = self.last_attack_result
         if turn == 1:
-            self.attacking_order(x, y)
+            return self.attacking_order(x, y)
         else:
             if result[-1]['result'] == 'nohit':
                 for i in list(reversed(result)):
                     if i['result'] == 'hit':
                         x = i['position'][0] + 50
                         y = i['position'][1]
-                        self.attacking_order(x, y)
-                        break
-                self.attacking_order(x, y)
+                        return self.attacking_order(x, y)
+                return self.attacking_order(x, y)
             elif result[-1]['result'] == 'hit':
                         x = x + 50
-                        self.attacking_order(x, y)
+                        return self.attacking_order(x, y)
 
     #! Don't edit global variable / constant or Fn
     # Attack Function is self.attacking_order(x: int, y: int) -> void
