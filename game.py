@@ -86,7 +86,7 @@ class Missile(pg.sprite.Sprite):
     def update(self):
         x = self.target['x']
         y = self.target['y']
-        if self.rect.x != x:
+        if self.rect.x != x:  
             if self.rect.x > x:
                 self.rect.x -= self.speed
             elif self.rect.x < x:
@@ -268,10 +268,13 @@ def winner_checker():
     global win_status
     global blue_ships
     global red_ships
+    global screen_status
     if len(blue_ships.sprites()) == 0:
         win_status = 'red'
+        screen_status = 'result'
     elif len(red_ships.sprites()) == 0:
         win_status = 'blue'
+        screen_status = 'result'
 
 ##########################################################
 ###################### AI INIT ###########################
@@ -368,6 +371,13 @@ version_rect = message_version.get_rect()
 version_rect.centerx = round(WIDTH / 2)
 version_rect.centery = round(HEIGHT - 50)
 
+##* MAIN SCREEN *##
+# MAIN TITLE
+message_result = my_big_font.render(f'{win_status} {RESULT}', True, WHITE)
+result_rect = message_result.get_rect()
+result_rect.centerx = round(WIDTH / 2)
+result_rect.centery = round(HEIGHT / 2)
+
 def draw_text():
     screen.blit(message_title, title_rect)
     screen.blit(message_new_game, new_game_rect)
@@ -393,6 +403,10 @@ def draw_main_text():
     pg.draw.line(screen, WHITE, [160, 290], [1060, 290], 2)
     screen.blit(message_start_game, start_game_rect)
     screen.blit(message_version, version_rect)
+
+def draw_result_text():
+    screen.blit(message_result, result_rect)
+
 
 ##########################################################
 ###################### GAME LOOP #########################
@@ -449,7 +463,9 @@ while not done:
         winner_checker()
         pg.display.update()
     elif screen_status == 'result':
-        screen.blit(background, (0, -176))
+        screen = pg.display.set_mode((WIDTH, HEIGHT))
+        screen.fill(BLACK)
+        draw_result_text()
         pg.display.update()
 
 

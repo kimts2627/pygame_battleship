@@ -20,4 +20,5 @@ RED_TEAM = "RED"
 LEFT_SHIPS = "Ships : "
 PLAYER_NAME = "Name : "
 START_GAME = "Press 'SPACE' to start game!"
+RESULT = 'WIN'
 VERSION = 'V 1.0.0'
