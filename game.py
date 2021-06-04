@@ -13,6 +13,8 @@ clock = pg.time.Clock()
 turn = 0
 _last_position = (0, 0)
 _last_result = 'no'
+win_status = ''
+screen_status = 'main'
 
 my_font = pg.font.SysFont('latobold', 30, True, False)
 my_font_2 = pg.font.SysFont('latobold', 25, True, False)
@@ -253,8 +255,8 @@ class Fire(pg.sprite.Sprite):
 
 def generate_user_action_result(attack_position: tuple, team: str):
     global map_data
-    map_y = int(attack_position[0] / 50)
-    map_x = int(attack_position[1] / 50)
+    map_y = int(attack_position[0] / TILESIZE)
+    map_x = int(attack_position[1] / TILESIZE)
 
     def find_hitted_ship(attack_position, ship_group):
         x = attack_position[0]
@@ -262,14 +264,14 @@ def generate_user_action_result(attack_position: tuple, team: str):
         print(x, y)
         for i in ship_group.sprites():
             print(i.rect, i.direction)
-            for j in range(0, 4):
+            for j in range(0, 5):
                 if i.direction == 'horizontal':
-                    print(i.rect.x + (50 * j), x)
+                    print(i.rect.x + (TILESIZE * j), x)
                     print(i.rect.y, y)
-                    if i.rect.x + (50 * j) == x and i.rect.y == y:
+                    if i.rect.x + (TILESIZE * j) == x and i.rect.y == y:
                         return i
                 elif i.direction == 'vertical':
-                    if i.rect.x == x and i.rect.y + (50 * j) == y:
+                    if i.rect.x == x and i.rect.y + (TILESIZE * j) == y:
                         return i
 
     if team == 'blue':
@@ -334,33 +336,33 @@ class MyAi:
 
         def is_valied_hori(x, y):
             if x != 0:
-               x = int(x / 50)
+               x = int(x / TILESIZE)
             if y != 0:
-               y = int(y / 50)
+               y = int(y / TILESIZE)
             try:
                 print(x, y)
                 if map_data[y][x] == 'o' and map_data[y][x+1] == 'o' and map_data[y][x+2] == 'o' and map_data[y][x+3] == 'o' and map_data[y][x+4] == 'o':
                     return True
                 else: 
-                    print(f'{(x*50, y*50)} hori 씹혔어요')
+                    print(f'{(x*TILESIZE, y*TILESIZE)} hori 씹혔어요')
                     return False
             except IndexError:
-                print(f'{(x*50, y*50)} hori 씹혔어요')
+                print(f'{(x*TILESIZE, y*TILESIZE)} hori 씹혔어요')
                 return False
 
         def is_valied_verti(x, y):
             if x != 0:
-               x = int(x / 50)
+               x = int(x / TILESIZE)
             if y != 0:
-               y = int(y / 50)
+               y = int(y / TILESIZE)
             try:
                 if map_data[y][x] == 'o' and map_data[y+1][x] == 'o' and map_data[y+2][x] == 'o' and map_data[y+3][x] == 'o' and map_data[y+4][x] == 'o':
                     return True
                 else:
-                    print(f'{(x*50, y*50)} vertical 씹혔어요')
+                    print(f'{(x*TILESIZE, y*TILESIZE)} vertical 씹혔어요')
                     return False
             except IndexError:
-                print(f'{(x*50, y*50)} vertical 씹혔어요')
+                print(f'{(x*TILESIZE, y*TILESIZE)} vertical 씹혔어요')
                 return False
 
         if self.team == 'blue':
@@ -373,9 +375,9 @@ class MyAi:
                     x = i[0]
                     y = i[1]
                     if x != 0:
-                        x = int(x / 50)
+                        x = int(x / TILESIZE)
                     if y != 0:
-                        y = int(y / 50)
+                        y = int(y / TILESIZE)
                     for j in range(0, 5):
                         map_data[y] = map_data[y][0:x+j] + '1' + map_data[y][x+j+1:]
                 else:
@@ -386,9 +388,9 @@ class MyAi:
                         x = i[0]
                         y = i[1]
                         if x != 0:
-                            x = int(x / 50)
+                            x = int(x / TILESIZE)
                         if y != 0:
-                            y = int(y / 50)
+                            y = int(y / TILESIZE)
                         for j in range(0, 5):
                             map_data[y+j] = map_data[y+j][0:x] + '1' + map_data[y+j][x+1:]
         elif self.team == 'red':
@@ -402,9 +404,9 @@ class MyAi:
                     x = i[0]
                     y = i[1]
                     if x != 0:
-                        x = int(x / 50)
+                        x = int(x / TILESIZE)
                     if y != 0:
-                        y = int(y / 50)
+                        y = int(y / TILESIZE)
                     for j in range(0, 5):
                         map_data[y] = map_data[y][0:x+j] + '2' + map_data[y][x+j+1:]
                 else:
@@ -415,9 +417,9 @@ class MyAi:
                         x = i[0]
                         y = i[1]
                         if x != 0:
-                            x = int(x / 50)
+                            x = int(x / TILESIZE)
                         if y != 0:
-                            y = int(y / 50)
+                            y = int(y / TILESIZE)
                         for j in range(0, 5):
                             map_data[y+j] = map_data[y+j][0:x] + '2' + map_data[y+j][x+1:]
 
@@ -428,18 +430,18 @@ class MyAi:
         new_y = y
         if new_x > 450:
             new_x = 450
-        elif new_x != 0 and new_x % 50 != 0:
-            if new_x < 50:
+        elif new_x != 0 and new_x % TILESIZE != 0:
+            if new_x < TILESIZE:
                 new_x = 0
             else:
-                new_x -= (new_x % 50)
+                new_x -= (new_x % TILESIZE)
         if new_y > 450:
             new_y = 450
-        elif new_y != 0 and new_y % 50 != 0:
-            if new_y < 50:
+        elif new_y != 0 and new_y % TILESIZE != 0:
+            if new_y < TILESIZE:
                 new_y = 0
             else:
-                new_y -= (new_y % 50)
+                new_y -= (new_y % TILESIZE)
         blue_ships_num = len(blue_ships.sprites())
         red_ships_num = len(red_ships.sprites())
         print(f'{self.team} => {x} {y}')
@@ -456,8 +458,8 @@ class MyAi:
 
     def ai_action(self, turn, map):
     #############################* USER CODE HERE *###################################### 
-        x = random.randint(0, 450)
-        y = random.randint(0, 450)
+        x = random.randint(0, 9) * TILESIZE
+        y = random.randint(0, 9) * TILESIZE
         result = self.last_attack_result
         return self.attacking_order(x, y)
         # if turn = 1:
@@ -517,6 +519,15 @@ def map_status_draw(map):
                 new_tile = Sea(i, j)
                 back_group.add(new_tile)
 
+def winner_checker():
+    global win_status
+    global blue_ships
+    global red_ships
+    if len(blue_ships.sprites()) == 0:
+        win_status = 'red'
+    elif len(red_ships.sprites()) == 0:
+        win_status = 'blue'
+
 blue_man = MyAi('blue', 'Taesu Kim')
 blue_man.ai_init()
 red_man = MyAi('red', 'Taesu Park')
@@ -530,35 +541,51 @@ while not done:
             done = True
         elif event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
-                turn += 1
-                print(f'********************************************************')
-                print(f'************************{turn} turn!*************************')
-                print(f'********************************************************')
-                blue_man.ai_action(turn, map_data)
-                blue_man.set_attack_result(_last_result, _last_position)
-                red_man.ai_action(turn, map_data)
-                red_man.set_attack_result(_last_result, _last_position)
-                ship_hit_checker(blue_ships, red_ships) 
-                print(blue_man.last_attack_result)
-                print(red_man.last_attack_result)
-                print(map_data)
-                map_status_draw(map_data)
+                if screen_status == 'main':
+                    screen_status = 'game'
+                elif screen_status == 'game':
+                    turn += 1
+                    print(f'********************************************************')
+                    print(f'************************{turn} turn!*************************')
+                    print(f'********************************************************')
+                    blue_man.ai_action(turn, map_data)
+                    blue_man.set_attack_result(_last_result, _last_position)
+                    red_man.ai_action(turn, map_data)
+                    red_man.set_attack_result(_last_result, _last_position)
+                    ship_hit_checker(blue_ships, red_ships) 
+                    print(blue_man.last_attack_result)
+                    print(red_man.last_attack_result)
+                    print(map_data)
+                    map_status_draw(map_data)
+            elif event.key == pg.K_q:
+                done = True
+            elif event.key == pg.K_n:
+                pg.init()
 
     screen.fill(BLACK)
     
-    screen.blit(background, (0, -176))
-    mt = 0.06
-    draw_text()
-    draw_grid()
-    red_ships.draw(screen)
-    blue_ships.draw(screen)
-    missile_group.draw(screen)
-    missile_group.update()
-    effect_group.draw(screen)
-    effect_group.update(mt)
-    back_group.draw(screen)
-    back_group.update(mt)
-    pg.display.update()
+    if screen_status == 'main':
+        screen.blit(background, (0, -176))
+        pg.display.update()
+    elif screen_status == 'game':
+        screen.blit(background, (0, -176))
+        mt = 0.06
+        draw_text()
+        draw_grid()
+        red_ships.draw(screen)
+        blue_ships.draw(screen)
+        missile_group.draw(screen)
+        missile_group.update()
+        effect_group.draw(screen)
+        effect_group.update(mt)
+        back_group.draw(screen)
+        back_group.update(mt)
+        winner_checker()
+        pg.display.update()
+    elif screen_status == 'result':
+        screen.blit(background, (0, -176))
+        pg.display.update()
+
 
 pg.quit()
 sys.exit()
