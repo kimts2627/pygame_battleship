@@ -125,40 +125,33 @@ class Sea(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.grid_x
         self.rect.y = self.grid_y
-        self.child = None
+        # self.child = None
 
-    def set_child(self, target_ship):
-        if target_ship:
-            fire = Fire(self.rect.x, self.rect.y, self)
-            self.child = fire
-            effect_group.add(fire)
-            print(f'({self.rect.x}, {self.rect.y}) has been attacked.')
+    # def set_child(self, target_ship):
+    #     if target_ship:
+    #         fire = Fire(self.rect.x, self.rect.y, self)
+    #         self.child = fire
+    #         effect_group.add(fire)
+    #         print(f'({self.rect.x}, {self.rect.y}) has been attacked.')
 
 with open('map.txt', 'r') as file:
     for line in file:
         map_data.append(line.strip('\n').split(' '))
 map_data = list(map(lambda x: x[0], map_data))
-for col in range(0, len(map_data)):
-    for row in range(0, len(map_data[col])):    
-        if map_data[col][row] == 'o':
-            sea = Sea(col, row)
-            back_group.add(sea)
-        if map_data[col][row] == 'x':
-            blank = Blank(col, row)
-            back_group.add(blank)
+for i in range(0, len(map_data)):
+    for j in range(0 , len(map_data[i])):
+        if map_data[i][j] == 'x':
+            tile = Blank(i, j)
+            back_group.add(tile)
+        elif map_data[i][j] == 'o':
+            tile = Sea(i, j)
+            back_group.add(tile)
 
 def draw_grid():
     for x in range(0, WIDTH, TILESIZE):
         pg.draw.line(screen, (0, 0, 0, 50), (x, 0), (x, 500))
     for y in range(0, 500, TILESIZE):
         pg.draw.line(screen, (0, 0, 0, 50), (0, y), (WIDTH, y))
-    back_group.draw(screen)
-
-# def game_init():
-#     ai_blue = MyAi('blue', '김태수')
-#     ai_red = MyAi('red', '박태수')
-#     ai_blue.ai_init()
-#     ai_red.ai_init()
 
 class Missile(pg.sprite.Sprite):
     def __init__(self, col, row, team, target):
@@ -236,14 +229,15 @@ class Explode(pg.sprite.Sprite):
             self.current_time = 0
 
 class Fire(pg.sprite.Sprite):
-    def __init__(self, col, row, mother):
+    def __init__(self, col, row):
         pg.sprite.Sprite.__init__(self)
-        self.mother_block = mother
+        self.grid_x = row * TILESIZE
+        self.grid_y = col * TILESIZE
         self.current_img = 1
         self.image = pg.image.load(path.join('images', 'fire', f'fire{self.current_img}.png')).convert_alpha()
         self.rect = self.image.get_rect()
-        self.rect.centerx = col + 25
-        self.rect.centery = row + 25
+        self.rect.x = self.grid_x
+        self.rect.y = self.grid_y
         self.animation_time = round(100 / 400, 2)
         self.current_time = 0
 
@@ -324,16 +318,6 @@ class Ship(pg.sprite.Sprite):
         missile_group.add(missile)
         _last_position = (target['x'] - 25, target['y'] - 25)
         _last_result = generate_user_action_result(_last_position, self.team)
-        # for i in back_group:
-        #     if i.rect.x + 25 == target['x'] and i.rect.y + 25 == target['y']:
-        #         for j in self.enemy_group:
-        #             if target['x'] == j.rect.x and target['y'] == j.rect.y:
-        #                 i.set_child(target)
-        #                 _last_position = (target['x'], target['y'])
-        #                 _last_result = generate_user_action_result()
-        #             else:
-        #                 _last_result = 'nohit'
-        #                 _last_position = (target['x'], target['y'])
 
 class MyAi:
     def __init__(self, team, name):
@@ -468,25 +452,26 @@ class MyAi:
         target = {'x': new_x, 'y': new_y}
         self.current_ship.attack(target)
 
-    def ai_action(self, turn):
+    def ai_action(self, turn, map):
     #############################* USER CODE HERE *###################################### 
         x = random.randint(0, 450)
         y = random.randint(0, 450)
         result = self.last_attack_result
-        if turn == 1:
+        if turn >= 1:
             return self.attacking_order(x, y)
-        else:
-            if result[-1]['result'] == 'nohit':
-                for i in list(reversed(result)):
-                    if i['result'] == 'hit':
-                        x = i['position'][0] + 50
-                        y = i['position'][1]
-                        return self.attacking_order(x, y)
-                return self.attacking_order(x, y)
-            elif result[-1]['result'] == 'hit':
-                        x = x + 50
-                        return self.attacking_order(x, y)
-
+        # else:
+        #     if result[-1]['result'] == 'nohit':
+        #         for i in list(reversed(result)):
+        #             if i['result'] == 'hit':
+        #                 x = i['position'][0] + 50
+        #                 y = i['position'][1]
+        #                 return self.attacking_order(x, y)
+        #         return self.attacking_order(x, y)
+        #     elif result[-1]['result'] == 'hit':
+        #         x = result[-1]['position'][0] + 50
+        #         y = result[-1]['position'][1]
+        #         return self.attacking_order(x, y)
+        
     #! Don't edit global variable / constant or Fn
     # Attack Function is self.attacking_order(x: int, y: int) -> void
     # 'x' or 'y' position must be 0 ~ 450 and also multiple of fifty
@@ -502,6 +487,7 @@ class MyAi:
         print(f'{self.team} attacked {position} position => {result}')
 
 def ship_hit_checker(blue_group, red_group):
+    global mini_map
     blues = blue_group.sprites()
     reds = red_group.sprites()
     for i in blues:
@@ -513,13 +499,28 @@ def ship_hit_checker(blue_group, red_group):
             red_group.remove(i)
             print('red team ship is sink down!')
 
+def map_status_draw(map):
+    global back_group
+    back_group.empty()
+    for i in range(0, len(map)):
+        for j in range(0, len(map[i])):
+            if map[i][j] == 'x':
+                new_tile = Blank(i, j)
+                back_group.add(new_tile)
+            elif map[i][j] == '3':
+                new_tile = Fire(i, j)
+                back_group.add(new_tile)
+            elif map[i][j] == 'o':
+                new_tile = Sea(i, j)
+                back_group.add(new_tile)
+
 blue_man = MyAi('blue', 'Taesu Kim')
 blue_man.ai_init()
 red_man = MyAi('red', 'Taesu Park')
 red_man.ai_init()
 
 done = False
-while not done:
+while not done: 
     clock.tick(FPS)
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -530,14 +531,20 @@ while not done:
                 print(f'********************************************************')
                 print(f'************************{turn} turn!*************************')
                 print(f'********************************************************')
-                blue_man.ai_action(turn)
+                blue_man.ai_action(turn, map_data)
                 blue_man.set_attack_result(_last_result, _last_position)
-                red_man.ai_action(turn)
+                red_man.ai_action(turn, map_data)
                 red_man.set_attack_result(_last_result, _last_position)
-                ship_hit_checker(blue_ships, red_ships)
+                ship_hit_checker(blue_ships, red_ships) 
+                print(blue_man.last_attack_result)
+                print(red_man.last_attack_result)
+                print(map_data)
+                map_status_draw(map_data)
+
     screen.fill(BLACK)
     
     screen.blit(background, (0, -176))
+    mt = 0.06
     draw_text()
     draw_grid()
     red_ships.draw(screen)
@@ -545,8 +552,9 @@ while not done:
     missile_group.draw(screen)
     missile_group.update()
     effect_group.draw(screen)
-    mt = 0.06
     effect_group.update(mt)
+    back_group.draw(screen)
+    back_group.update(mt)
     pg.display.update()
 
 pg.quit()
