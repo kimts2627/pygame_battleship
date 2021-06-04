@@ -264,6 +264,8 @@ def generate_user_action_result(attack_position: tuple, team: str):
             print(i.rect, i.direction)
             for j in range(0, 4):
                 if i.direction == 'horizontal':
+                    print(i.rect.x + (50 * j), x)
+                    print(i.rect.y, y)
                     if i.rect.x + (50 * j) == x and i.rect.y == y:
                         return i
                 elif i.direction == 'vertical':
@@ -457,8 +459,9 @@ class MyAi:
         x = random.randint(0, 450)
         y = random.randint(0, 450)
         result = self.last_attack_result
-        if turn >= 1:
-            return self.attacking_order(x, y)
+        return self.attacking_order(x, y)
+        # if turn = 1:
+        #     return self.attacking_order(x, y)
         # else:
         #     if result[-1]['result'] == 'nohit':
         #         for i in list(reversed(result)):
