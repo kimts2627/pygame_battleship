@@ -1,6 +1,3 @@
-import pygame as pg
-from os import path
-import math
 
 TILESIZE = 50
 WIDTH = 1200
@@ -22,3 +19,5 @@ BLUE_TEAM = "BLUE"
 RED_TEAM = "RED"
 LEFT_SHIPS = "Ships : "
 PLAYER_NAME = "Name : "
+START_GAME = "Press 'SPACE' to start game!"
+VERSION = 'V 1.0.0'

@@ -1,12 +1,14 @@
 import pygame as pg
 import sys
 import random
-from math import cos, e, sin, floor
 from os import path
-from globals import *
-from ai_blue import *
-from ai_red import *
+from constants import *
+from ai_blue import BlueAi
+from ai_red import RedAi
 
+##########################################################
+######################## INIT ############################
+##########################################################
 pg.init()
 map_data = []
 clock = pg.time.Clock()
@@ -16,9 +18,9 @@ _last_result = 'no'
 win_status = ''
 screen_status = 'main'
 
-my_font = pg.font.SysFont('latobold', 30, True, False)
-my_font_2 = pg.font.SysFont('latobold', 25, True, False)
-my_font_3 = pg.font.SysFont('latobold', 20, True, False)
+screen = pg.display.set_mode((WIDTH, HEIGHT))
+background = pg.image.load('images/background.jpeg')
+pg.display.set_caption('BATTLE-SHIP')
 
 back_group = pg.sprite.Group()
 red_ships = pg.sprite.Group()
@@ -26,87 +28,9 @@ blue_ships = pg.sprite.Group()
 missile_group = pg.sprite.Group()
 effect_group = pg.sprite.Group()
 
-# title of game
-message_title = my_font.render(TITLE, True, WHITE)
-title_rect = message_title.get_rect()
-title_rect.centerx = round(WIDTH / 2)
-title_rect.y = 520
-# game current turn
-message_turn = my_font_2.render(TURN + f'{turn}', True, WHITE)
-turn_rect = message_turn.get_rect()
-turn_rect.centerx = round(WIDTH / 2)
-turn_rect.y = 550
-# turn progress guide
-message_next_turn = my_font_3.render(NEXT_TURN, True, WHITE)
-next_turn_rect = message_next_turn.get_rect()
-next_turn_rect.centerx = round(WIDTH / 2)
-next_turn_rect.y = 590
-# new game guide
-message_new_game = my_font_3.render(NEWGAME, True, WHITE)
-new_game_rect = message_new_game.get_rect()
-new_game_rect.centerx = round(WIDTH / 2)
-new_game_rect.y = 615
-# exit game guide
-message_exit_game = my_font_3.render(ENDGAME, True, WHITE)
-exit_game_rect = message_exit_game.get_rect()
-exit_game_rect.centerx = round(WIDTH / 2)
-exit_game_rect.y = 640
-# BLUE
-message_blue = my_font.render(BLUE_TEAM, True, BLUE)
-blue_rect = message_blue.get_rect()
-blue_rect.centerx = 250
-blue_rect.y = 520
-# BLUE_NAME
-blue_name = 'Taesu Kim'
-message_blue_name = my_font_3.render(PLAYER_NAME + blue_name, True, WHITE)
-blue_name_rect = message_blue_name.get_rect()
-blue_name_rect.centerx = 250
-blue_name_rect.y = 560
-# BLUE_SHIPS
-message_blue_ships = my_font_3.render(LEFT_SHIPS + str(len(blue_ships.sprites())), True, WHITE)
-blue_ships_rect = message_blue_ships.get_rect()
-blue_ships_rect.centerx = 250
-blue_ships_rect.y = 590
-# RED
-message_red = my_font.render(RED_TEAM, True, RED)
-red_rect = message_red.get_rect()
-red_rect.centerx = 950
-red_rect.y = 520
-# RED_NAME
-red_name = 'Taesu Park'
-message_red_name = my_font_3.render(PLAYER_NAME + red_name, True, WHITE)
-red_name_rect = message_red_name.get_rect()
-red_name_rect.centerx = 950
-red_name_rect.y = 560
-# RED_SHIPS
-message_red_ships = my_font_3.render(LEFT_SHIPS + str(len(red_ships.sprites())), True, WHITE)
-red_ships_rect = message_red_ships.get_rect()
-red_ships_rect.centerx = 950
-red_ships_rect.y = 590
-# SCREEN
-screen = pg.display.set_mode((WIDTH, HEIGHT))
-background = pg.image.load('images/background.jpeg')
-pg.display.set_caption('BATTLE-SHIP')
-
-def draw_text():
-    screen.blit(message_title, title_rect)
-    screen.blit(message_new_game, new_game_rect)
-    message_turn = my_font_2.render(TURN + f'{turn}', True, WHITE)
-    screen.blit(message_turn, turn_rect)
-    screen.blit(message_next_turn, next_turn_rect)
-    screen.blit(message_exit_game, exit_game_rect)
-
-    pg.draw.line(screen, WHITE, [500, 520], [500, 670], 4)
-    pg.draw.line(screen, WHITE, [700, 520], [700, 670], 4)
-
-    screen.blit(message_blue, blue_rect)
-    screen.blit(message_blue_name, blue_name_rect)
-    message_blue_ships = my_font_3.render(LEFT_SHIPS + str(len(blue_ships.sprites())), True, WHITE)
-    screen.blit(message_blue_ships, blue_ships_rect)
-    screen.blit(message_red, red_rect)
-    screen.blit(message_red_name, red_name_rect)
-    message_red_ships = my_font_3.render(LEFT_SHIPS + str(len(red_ships.sprites())), True, WHITE)
-    screen.blit(message_red_ships, red_ships_rect)
+##########################################################
+################### CLASS & FUNCTIONS ####################
+##########################################################
 
 class Blank(pg.sprite.Sprite):
     def __init__(self, col, row):
@@ -127,14 +51,6 @@ class Sea(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.grid_x
         self.rect.y = self.grid_y
-        # self.child = None
-
-    # def set_child(self, target_ship):
-    #     if target_ship:
-    #         fire = Fire(self.rect.x, self.rect.y, self)
-    #         self.child = fire
-    #         effect_group.add(fire)
-    #         print(f'({self.rect.x}, {self.rect.y}) has been attacked.')
 
 with open('map.txt', 'r') as file:
     for line in file:
@@ -308,9 +224,6 @@ class Ship(pg.sprite.Sprite):
         self.rect.y = row
         self.direction = direction
         if self.direction == 'vertical': self.image = pg.transform.rotate(self.image, 90)
-        self.enemy_group = None
-        if self.team == 'blue': self.enemy_group = red_ships
-        elif self.team == 'red': self.enemy_group = blue_ships
         self.hit_count = 0
 
     def attack(self, target):
@@ -322,174 +235,6 @@ class Ship(pg.sprite.Sprite):
         missile_group.add(missile)
         _last_position = (target['x'] - 25, target['y'] - 25)
         _last_result = generate_user_action_result(_last_position, self.team)
-
-class MyAi:
-    def __init__(self, team, name):
-        self.team = team
-        self.name = name or 'unnamed'
-        self.ships = []
-        self.current_ship = None
-        self.last_attack_result = []
-
-    def create_ships(self):
-        global map_data
-
-        def is_valied_hori(x, y):
-            if x != 0:
-               x = int(x / TILESIZE)
-            if y != 0:
-               y = int(y / TILESIZE)
-            try:
-                print(x, y)
-                if map_data[y][x] == 'o' and map_data[y][x+1] == 'o' and map_data[y][x+2] == 'o' and map_data[y][x+3] == 'o' and map_data[y][x+4] == 'o':
-                    return True
-                else: 
-                    print(f'{(x*TILESIZE, y*TILESIZE)} hori 씹혔어요')
-                    return False
-            except IndexError:
-                print(f'{(x*TILESIZE, y*TILESIZE)} hori 씹혔어요')
-                return False
-
-        def is_valied_verti(x, y):
-            if x != 0:
-               x = int(x / TILESIZE)
-            if y != 0:
-               y = int(y / TILESIZE)
-            try:
-                if map_data[y][x] == 'o' and map_data[y+1][x] == 'o' and map_data[y+2][x] == 'o' and map_data[y+3][x] == 'o' and map_data[y+4][x] == 'o':
-                    return True
-                else:
-                    print(f'{(x*TILESIZE, y*TILESIZE)} vertical 씹혔어요')
-                    return False
-            except IndexError:
-                print(f'{(x*TILESIZE, y*TILESIZE)} vertical 씹혔어요')
-                return False
-
-        if self.team == 'blue':
-            SHIPS_POS = [[150, 100], [50, 100], [200, 300], [0, 450]]
-            for i in SHIPS_POS:
-                if is_valied_hori(i[0], i[1]) == True:
-                    new_ship = Ship(i[0], i[1], self.team, 'horizontal')
-                    self.ships.append(new_ship)
-                    blue_ships.add(new_ship)
-                    x = i[0]
-                    y = i[1]
-                    if x != 0:
-                        x = int(x / TILESIZE)
-                    if y != 0:
-                        y = int(y / TILESIZE)
-                    for j in range(0, 5):
-                        map_data[y] = map_data[y][0:x+j] + '1' + map_data[y][x+j+1:]
-                else:
-                    if is_valied_verti(i[0], i[1]) == True:
-                        new_ship = Ship(i[0], i[1], self.team, 'vertical')
-                        self.ships.append(new_ship)
-                        blue_ships.add(new_ship)
-                        x = i[0]
-                        y = i[1]
-                        if x != 0:
-                            x = int(x / TILESIZE)
-                        if y != 0:
-                            y = int(y / TILESIZE)
-                        for j in range(0, 5):
-                            map_data[y+j] = map_data[y+j][0:x] + '1' + map_data[y+j][x+1:]
-        elif self.team == 'red':
-            SHIPS_POS = [[150, 100], [250, 50], [200, 300], [0, 450]]
-            SHIPS_POS = list(map(lambda i : [i[0] + 700, i[1]], SHIPS_POS))
-            for i in SHIPS_POS:
-                if is_valied_hori(i[0], i[1]) == True:
-                    new_ship = Ship(i[0], i[1], self.team, 'horizontal')
-                    self.ships.append(new_ship)
-                    red_ships.add(new_ship)
-                    x = i[0]
-                    y = i[1]
-                    if x != 0:
-                        x = int(x / TILESIZE)
-                    if y != 0:
-                        y = int(y / TILESIZE)
-                    for j in range(0, 5):
-                        map_data[y] = map_data[y][0:x+j] + '2' + map_data[y][x+j+1:]
-                else:
-                    if is_valied_verti(i[0], i[1]) == True:
-                        new_ship = Ship(i[0], i[1], self.team, 'vertical')
-                        self.ships.append(new_ship)
-                        red_ships.add(new_ship)
-                        x = i[0]
-                        y = i[1]
-                        if x != 0:
-                            x = int(x / TILESIZE)
-                        if y != 0:
-                            y = int(y / TILESIZE)
-                        for j in range(0, 5):
-                            map_data[y+j] = map_data[y+j][0:x] + '2' + map_data[y+j][x+1:]
-
-    def attacking_order(self, x: int, y: int):
-        #! 입력 좌표가 최대값(450)을 넘어가면 450으로 보정
-        #! 0이나 50의 배수가 아니라면, 입력값과 가장 가까운 50의 배수로 보정(내림)
-        new_x = x
-        new_y = y
-        if new_x > 450:
-            new_x = 450
-        elif new_x != 0 and new_x % TILESIZE != 0:
-            if new_x < TILESIZE:
-                new_x = 0
-            else:
-                new_x -= (new_x % TILESIZE)
-        if new_y > 450:
-            new_y = 450
-        elif new_y != 0 and new_y % TILESIZE != 0:
-            if new_y < TILESIZE:
-                new_y = 0
-            else:
-                new_y -= (new_y % TILESIZE)
-        blue_ships_num = len(blue_ships.sprites())
-        red_ships_num = len(red_ships.sprites())
-        print(f'{self.team} => {x} {y}')
-        if self.team == 'blue':
-            new_x += 725
-            new_y += 25
-            self.current_ship = blue_ships.sprites()[random.randrange(0, blue_ships_num)]
-        elif self.team == 'red':
-            new_x += 25
-            new_y += 25
-            self.current_ship = red_ships.sprites()[random.randrange(0, red_ships_num)]
-        target = {'x': new_x, 'y': new_y}
-        self.current_ship.attack(target)
-
-    def ai_action(self, turn, map):
-    #############################* USER CODE HERE *###################################### 
-        x = random.randint(0, 9) * TILESIZE
-        y = random.randint(0, 9) * TILESIZE
-        result = self.last_attack_result
-        return self.attacking_order(x, y)
-        # if turn = 1:
-        #     return self.attacking_order(x, y)
-        # else:
-        #     if result[-1]['result'] == 'nohit':
-        #         for i in list(reversed(result)):
-        #             if i['result'] == 'hit':
-        #                 x = i['position'][0] + 50
-        #                 y = i['position'][1]
-        #                 return self.attacking_order(x, y)
-        #         return self.attacking_order(x, y)
-        #     elif result[-1]['result'] == 'hit':
-        #         x = result[-1]['position'][0] + 50
-        #         y = result[-1]['position'][1]
-        #         return self.attacking_order(x, y)
-        
-    #! Don't edit global variable / constant or Fn
-    # Attack Function is self.attacking_order(x: int, y: int) -> void
-    # 'x' or 'y' position must be 0 ~ 450 and also multiple of fifty
-    # Position value will auto adjustment, if position value over 450 or not multiple of fifty
-    # Your attacking order's result will be in self.last_attack_result list ([{position: tuple, result: str} ... {position: tuple, result: str}])     
-    #############################* USER CODE HERE * ###################################### 
-
-    def ai_init(self):
-        self.create_ships()
-
-    def set_attack_result(self, result, position):
-        self.last_attack_result.append({'result': result, 'position': position})
-        print(f'{self.team} attacked {position} position => {result}')
 
 def ship_hit_checker(blue_group, red_group):
     global mini_map
@@ -528,10 +273,130 @@ def winner_checker():
     elif len(red_ships.sprites()) == 0:
         win_status = 'blue'
 
-blue_man = MyAi('blue', 'Taesu Kim')
+##########################################################
+###################### AI INIT ###########################
+##########################################################
+
+blue_man = BlueAi('blue', Ship)
 blue_man.ai_init()
-red_man = MyAi('red', 'Taesu Park')
+red_man = RedAi('red', Ship)
 red_man.ai_init()
+
+##########################################################
+######################## TEXT ############################
+##########################################################
+
+my_big_font = pg.font.SysFont('arial', 50, True, False)
+my_font = pg.font.SysFont('arial', 30, True, False)
+my_font_2 = pg.font.SysFont('arial', 25, True, False)
+my_font_3 = pg.font.SysFont('arial', 20, True, False)
+my_small_font = pg.font.SysFont('arial', 10, True, False)
+
+##* GAME SCREEN *##
+# GAME TITLE
+message_title = my_font.render(TITLE, True, WHITE)
+title_rect = message_title.get_rect()
+title_rect.centerx = round(WIDTH / 2)
+title_rect.y = 520
+# TURN
+message_turn = my_font_2.render(TURN + f'{turn}', True, WHITE)
+turn_rect = message_turn.get_rect()
+turn_rect.centerx = round(WIDTH / 2)
+turn_rect.y = 550
+# NEXT TURN
+message_next_turn = my_font_3.render(NEXT_TURN, True, WHITE)
+next_turn_rect = message_next_turn.get_rect()
+next_turn_rect.centerx = round(WIDTH / 2)
+next_turn_rect.y = 590
+# NEW GAME
+message_new_game = my_font_3.render(NEWGAME, True, WHITE)
+new_game_rect = message_new_game.get_rect()
+new_game_rect.centerx = round(WIDTH / 2)
+new_game_rect.y = 615
+# QUIT GAME
+message_exit_game = my_font_3.render(ENDGAME, True, WHITE)
+exit_game_rect = message_exit_game.get_rect()
+exit_game_rect.centerx = round(WIDTH / 2)
+exit_game_rect.y = 640
+# BLUE
+message_blue = my_font.render(BLUE_TEAM, True, BLUE)
+blue_rect = message_blue.get_rect()
+blue_rect.centerx = 250
+blue_rect.y = 520
+# BLUE NAME
+blue_name = blue_man.name
+message_blue_name = my_font_3.render(PLAYER_NAME + blue_name, True, WHITE)
+blue_name_rect = message_blue_name.get_rect()
+blue_name_rect.centerx = 250
+blue_name_rect.y = 560
+# BLUE SHIPS
+message_blue_ships = my_font_3.render(LEFT_SHIPS + str(len(blue_ships.sprites())), True, WHITE)
+blue_ships_rect = message_blue_ships.get_rect()
+blue_ships_rect.centerx = 250
+blue_ships_rect.y = 590
+# RED
+message_red = my_font.render(RED_TEAM, True, RED)
+red_rect = message_red.get_rect()
+red_rect.centerx = 950
+red_rect.y = 520
+# RED NAME
+red_name = red_man.name
+message_red_name = my_font_3.render(PLAYER_NAME + red_name, True, WHITE)
+red_name_rect = message_red_name.get_rect()
+red_name_rect.centerx = 950
+red_name_rect.y = 560
+# RED SHIPS
+message_red_ships = my_font_3.render(LEFT_SHIPS + str(len(red_ships.sprites())), True, WHITE)
+red_ships_rect = message_red_ships.get_rect()
+red_ships_rect.centerx = 950
+red_ships_rect.y = 590
+
+##* MAIN SCREEN *##
+# MAIN TITLE
+message_main_title = my_big_font.render(TITLE, True, WHITE)
+main_title_rect = message_main_title.get_rect()
+main_title_rect.centerx = round(WIDTH / 2)
+main_title_rect.centery = round(HEIGHT / 2 - 100)
+# START GAME
+message_start_game = my_font_2.render(START_GAME, True, WHITE)
+start_game_rect = message_start_game.get_rect()
+start_game_rect.centerx = round(WIDTH / 2)
+start_game_rect.centery = round(HEIGHT / 2 - 30)
+# VERSION
+message_version = my_small_font.render(VERSION, True, WHITE)
+version_rect = message_version.get_rect()
+version_rect.centerx = round(WIDTH / 2)
+version_rect.centery = round(HEIGHT - 50)
+
+def draw_text():
+    screen.blit(message_title, title_rect)
+    screen.blit(message_new_game, new_game_rect)
+    message_turn = my_font_3.render(TURN + f'{turn}', True, WHITE)
+    screen.blit(message_turn, turn_rect)
+    screen.blit(message_next_turn, next_turn_rect)
+    screen.blit(message_exit_game, exit_game_rect)
+
+    pg.draw.line(screen, WHITE, [460, 520], [460, 670], 4)
+    pg.draw.line(screen, WHITE, [740, 520], [740, 670], 4)
+
+    screen.blit(message_blue, blue_rect)
+    screen.blit(message_blue_name, blue_name_rect)
+    message_blue_ships = my_font_3.render(LEFT_SHIPS + str(len(blue_ships.sprites())), True, WHITE)
+    screen.blit(message_blue_ships, blue_ships_rect)
+    screen.blit(message_red, red_rect)
+    screen.blit(message_red_name, red_name_rect)
+    message_red_ships = my_font_3.render(LEFT_SHIPS + str(len(red_ships.sprites())), True, WHITE)
+    screen.blit(message_red_ships, red_ships_rect)
+
+def draw_main_text():
+    screen.blit(message_main_title, main_title_rect)
+    pg.draw.line(screen, WHITE, [160, 290], [1060, 290], 2)
+    screen.blit(message_start_game, start_game_rect)
+    screen.blit(message_version, version_rect)
+
+##########################################################
+###################### GAME LOOP #########################
+##########################################################
 
 done = False
 while not done: 
@@ -566,6 +431,7 @@ while not done:
     
     if screen_status == 'main':
         screen.blit(background, (0, -176))
+        draw_main_text()
         pg.display.update()
     elif screen_status == 'game':
         screen.blit(background, (0, -176))
