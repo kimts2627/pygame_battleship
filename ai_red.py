@@ -155,7 +155,8 @@ class RedAi:
             for i in range(len(map)):
                 for j in range(len(map[i])):
                     if i == int(y / TILESIZE) and j == int(x / TILESIZE):
-                        return True
+                        if map[i][j] != 'x' and map[i][j] != '3':
+                            return True
             return False
         
         if turn == 1:

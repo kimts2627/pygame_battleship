@@ -15,7 +15,7 @@ clock = pg.time.Clock()
 turn = 0
 _last_position = (0, 0)
 _last_result = 'no'
-win_status = 'red'
+win_status = ''
 screen_status = 'main'
 
 screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -27,6 +27,7 @@ red_ships = pg.sprite.Group()
 blue_ships = pg.sprite.Group()
 missile_group = pg.sprite.Group()
 effect_group = pg.sprite.Group()
+wreck_group = pg.sprite.Group()
 
 ##########################################################
 ################### CLASS & FUNCTIONS ####################
@@ -236,16 +237,32 @@ class Ship(pg.sprite.Sprite):
         _last_position = (target['x'] - 25, target['y'] - 25)
         _last_result = generate_user_action_result(_last_position, self.team)
 
+class DestoryedShip(pg.sprite.Sprite):
+    def __init__(self, col, row, team, direction):
+        pg.sprite.Sprite.__init__(self)
+        self.team = team
+        self.direction = direction
+        self.image = pg.image.load(path.join('images', 'destroyer_destoryed.png')).convert_alpha()
+        if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
+        self.rect = self.image.get_rect()
+        self.rect.x = col
+        self.rect.y = row
+        if self.direction == 'vertical': self.image = pg.transform.rotate(self.image, 90)
+        
 def ship_hit_checker(blue_group, red_group):
     global mini_map
     blues = blue_group.sprites()
     reds = red_group.sprites()
     for i in blues:
         if i.hit_count == 5:
+            wreck = DestoryedShip(i.rect.x, i.rect.y, i.team, i.direction)
+            wreck_group.add(wreck)
             blue_group.remove(i)
             print('blue team ship is sink down!')
     for i in reds:
         if i.hit_count == 5:
+            wreck = DestoryedShip(i.rect.x, i.rect.y, i.team, i.direction)
+            wreck_group.add(wreck)
             red_group.remove(i)
             print('red team ship is sink down!')
 
@@ -269,11 +286,12 @@ def winner_checker():
     global blue_ships
     global red_ships
     global screen_status
+    global message_result
     if len(blue_ships.sprites()) == 0:
-        win_status = 'red'
+        win_status = 'RED'
         screen_status = 'result'
     elif len(red_ships.sprites()) == 0:
-        win_status = 'blue'
+        win_status = 'BLUE'
         screen_status = 'result'
 
 ##########################################################
@@ -373,10 +391,10 @@ version_rect.centery = round(HEIGHT - 50)
 
 ##* RRESULT SCREEN *##
 # RESULT
-message_result = my_big_font.render(f'{win_status} {RESULT}', True, WHITE)
-result_rect = message_result.get_rect()
-result_rect.centerx = round(WIDTH / 2)
-result_rect.centery = round(HEIGHT / 2)
+# message_result = my_big_font.render(f'{win_status} {RESULT}', True, WHITE)
+# result_rect = message_result.get_rect()
+# result_rect.centerx = round(WIDTH / 2)
+# result_rect.centery = round(HEIGHT / 2)
 
 def draw_text():
     screen.blit(message_title, title_rect)
@@ -405,6 +423,10 @@ def draw_main_text():
     screen.blit(message_version, version_rect)
 
 def draw_result_text():
+    message_result = my_big_font.render(f'{win_status} {RESULT}', True, WHITE)
+    result_rect = message_result.get_rect()
+    result_rect.centerx = round(WIDTH / 2)
+    result_rect.centery = round(HEIGHT / 2)
     screen.blit(message_result, result_rect)
 
 
@@ -468,6 +490,8 @@ while not done:
         effect_group.update(mt)
         back_group.draw(screen)
         back_group.update(mt)
+        wreck_group.draw(screen)
+        wreck_group.update()
         pg.display.update()
     elif screen_status == 'result':
         screen = pg.display.set_mode((WIDTH, HEIGHT))
