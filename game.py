@@ -1,6 +1,6 @@
 import pygame as pg
 import sys
-import random
+import copy
 from os import path
 from constants import *
 from ai_blue import BlueAi
@@ -15,7 +15,7 @@ clock = pg.time.Clock()
 turn = 0
 _last_position = (0, 0)
 _last_result = 'no'
-win_status = ''
+win_status = 'red'
 screen_status = 'main'
 
 screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -371,8 +371,8 @@ version_rect = message_version.get_rect()
 version_rect.centerx = round(WIDTH / 2)
 version_rect.centery = round(HEIGHT - 50)
 
-##* MAIN SCREEN *##
-# MAIN TITLE
+##* RRESULT SCREEN *##
+# RESULT
 message_result = my_big_font.render(f'{win_status} {RESULT}', True, WHITE)
 result_rect = message_result.get_rect()
 result_rect.centerx = round(WIDTH / 2)
@@ -427,14 +427,22 @@ while not done:
                     print(f'********************************************************')
                     print(f'************************{turn} turn!*************************')
                     print(f'********************************************************')
-                    blue_man.ai_action(turn, map_data)
+                    hidden_map = copy.deepcopy(map_data)
+                    for i in range(len(hidden_map)):
+                        for j in range(len(hidden_map[i])):
+                            if hidden_map[i][j] == '2':
+                                hidden_map[i] = hidden_map[i][0:j] + 'o' + hidden_map[i][j+1:]
+                    blue_man.ai_action(turn, hidden_map)
                     blue_man.set_attack_result(_last_result, _last_position)
-                    red_man.ai_action(turn, map_data)
+                    hidden_map = copy.deepcopy(map_data)
+                    for i in range(len(hidden_map)):
+                        for j in range(len(hidden_map[i])):
+                            if hidden_map[i][j] == '1':
+                                hidden_map[i] = hidden_map[i][0:j] + 'o' + hidden_map[i][j+1:]
+                    red_man.ai_action(turn, hidden_map)
                     red_man.set_attack_result(_last_result, _last_position)
-                    ship_hit_checker(blue_ships, red_ships) 
-                    print(blue_man.last_attack_result)
-                    print(red_man.last_attack_result)
-                    print(map_data)
+                    ship_hit_checker(blue_ships, red_ships)
+                    winner_checker()
                     map_status_draw(map_data)
             elif event.key == pg.K_q:
                 done = True
@@ -460,7 +468,6 @@ while not done:
         effect_group.update(mt)
         back_group.draw(screen)
         back_group.update(mt)
-        winner_checker()
         pg.display.update()
     elif screen_status == 'result':
         screen = pg.display.set_mode((WIDTH, HEIGHT))

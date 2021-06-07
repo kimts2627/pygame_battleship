@@ -150,21 +150,30 @@ class RedAi:
         x = random.randint(0, 9) * TILESIZE
         y = random.randint(0, 9) * TILESIZE
         result = self.last_attack_result
-        return self.attacking_order(x, y)
-        # if turn = 1:
-        #     return self.attacking_order(x, y)
-        # else:
-        #     if result[-1]['result'] == 'nohit':
-        #         for i in list(reversed(result)):
-        #             if i['result'] == 'hit':
-        #                 x = i['position'][0] + 50
-        #                 y = i['position'][1]
-        #                 return self.attacking_order(x, y)
-        #         return self.attacking_order(x, y)
-        #     elif result[-1]['result'] == 'hit':
-        #         x = result[-1]['position'][0] + 50
-        #         y = result[-1]['position'][1]
-        #         return self.attacking_order(x, y)
+                
+        def invalid_position_checker(map, x, y):
+            for i in range(len(map)):
+                for j in range(len(map[i])):
+                    if i == int(y / TILESIZE) and j == int(x / TILESIZE):
+                        return True
+            return False
+        
+        if turn == 1:
+            return self.attacking_order(x, y)
+        elif result[-1]['result'] == 'nohit':
+            if invalid_position_checker(map, x, y) == True:
+                return self.attacking_order(x, y)
+            else:
+                return self.ai_action(turn, map)
+        elif result[-1]['result'] == 'hit':
+            if result[-1]['position'][0] < 450 and result[-1]['position'][1] >= 0:
+                x = result[-1]['position'][0] + 50
+                y = result[-1]['position'][1]
+                return self.attacking_order(x, y)
+            elif result[-1]['position'][1] == 450:
+                x = result[-1]['position'][0] - 50
+                y = result[-1]['position'][1]
+                return self.attacking_order(x, y)
         
     #! Don't edit global variable / constant or Fn
     # Attack Function is self.attacking_order(x: int, y: int) -> void
