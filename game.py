@@ -1,11 +1,12 @@
 import pygame as pg
 import sys
 import copy
+import pprint
 from os import path
 from constants import *
 from ai_blue import BlueAi
 from ai_red import RedAi
-
+pp = pprint.PrettyPrinter(width=41, compact=True)
 ##########################################################
 ######################## INIT ############################
 ##########################################################
@@ -82,21 +83,39 @@ class Missile(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = col
         self.rect.y = row
+        self.pos_list = [(self.rect.x, self.rect.y), (target['x'], target['y'])]
+        self.pos = self.pos_list[0]
         self.speed = 25
+        self.next_pos_index = 1
+        self.angle = 0
 
     def update(self):
         x = self.target['x']
         y = self.target['y']
-        if self.rect.x != x:  
-            if self.rect.x > x:
-                self.rect.x -= self.speed
-            elif self.rect.x < x:
-                self.rect.x += self.speed
-        if self.rect.y != y:
-            if self.rect.y > y:
-                self.rect.y -= self.speed
-            elif self.rect.y < y:
-                self.rect.y += self.speed
+        # if self.rect.x != x:  
+        #     if self.rect.x > x:
+        #         self.rect.x -= self.speed
+        #     elif self.rect.x < x:
+        #         self.rect.x += self.speed
+        # if self.rect.y != y:
+        #     if self.rect.y > y:
+        #         self.rect.y -= self.speed
+        #     elif self.rect.y < y:
+        #         self.rect.y += self.speed
+        # if self.rect.y == y and self.rect.x == x:
+        #     explode = Explode(x, y)
+        #     effect_group.add(explode)
+        #     missile_group.remove(self)
+        missile_dir = pg.math.Vector2(self.pos_list[self.next_pos_index]) - self.pos
+        if missile_dir.length() < self.speed:
+            self.pos = self.pos_list[self.next_pos_index]
+            self.next_pos_index = (self.next_pos_index + 1) % len(self.pos_list)
+        else:
+            missile_dir.scale_to_length(self.speed)
+            new_pos = pg.math.Vector2(self.pos) + missile_dir
+            self.pos = (new_pos.x, new_pos.y)
+        self.rect.x = round(self.pos[0])
+        self.rect.y = round(self.pos[1])
         if self.rect.y == y and self.rect.x == x:
             explode = Explode(x, y)
             effect_group.add(explode)
@@ -108,8 +127,9 @@ class MissileFx(pg.sprite.Sprite):
     def __init__(self, parent):
         pg.sprite.Sprite.__init__(self)
         self.parent = parent
-        self.x = self.parent.rect.x
-        self.y = self.parent.rect.y
+        self.x = parent.rect.x
+        self.y = parent.rect.y
+        if parent.team == 'red': self.x = self.x + 70
         self.image = pg.Surface((self.x, self.y))
         self.image.fill(GRAY)
         pg.draw.circle(self.image, GRAY, (self.x // 2, self.y // 2), 5)
@@ -466,6 +486,7 @@ while not done:
                     ship_hit_checker(blue_ships, red_ships)
                     winner_checker()
                     map_status_draw(map_data)
+                    pp.pprint(map_data)
             elif event.key == pg.K_q:
                 done = True
             elif event.key == pg.K_n:

@@ -146,7 +146,9 @@ class BlueAi:
         self.current_ship.attack(target)
 
     def ai_action(self, turn, map):
-    #############################* USER CODE HERE *###################################### 
+    #######################################*#############################################
+    #############################* USER CODE HERE *######################################
+    #######################################*#############################################
         x = random.randint(0, 9) * TILESIZE
         y = random.randint(0, 9) * TILESIZE
         result = self.last_attack_result
@@ -171,7 +173,9 @@ class BlueAi:
     # 'x' or 'y' position must be 0 ~ 450 and also multiple of fifty
     # Position value will auto adjustment, if position value over 450 or not multiple of fifty
     # Your attacking order's result will be in self.last_attack_result list ([{position: tuple, result: str} ... {position: tuple, result: str}])     
-    #############################* USER CODE HERE *###################################### 
+    #######################################*#############################################
+    #############################* USER CODE HERE *######################################
+    #######################################*#############################################
 
     def ai_init(self):
         self.create_ships()
