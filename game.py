@@ -2,6 +2,7 @@ import pygame as pg
 import sys
 import copy
 import pprint
+import math
 from os import path
 from constants import *
 from ai_blue import BlueAi
@@ -87,25 +88,12 @@ class Missile(pg.sprite.Sprite):
         self.pos = self.pos_list[0]
         self.speed = 25
         self.next_pos_index = 1
-        self.angle = 0
+        self.angle = math.degrees(math.atan2(self.rect.centery - target['y'], target['x'] - self.rect.centerx))
+        self.image = pg.transform.rotate(self.image, self.angle)
 
     def update(self):
         x = self.target['x']
         y = self.target['y']
-        # if self.rect.x != x:  
-        #     if self.rect.x > x:
-        #         self.rect.x -= self.speed
-        #     elif self.rect.x < x:
-        #         self.rect.x += self.speed
-        # if self.rect.y != y:
-        #     if self.rect.y > y:
-        #         self.rect.y -= self.speed
-        #     elif self.rect.y < y:
-        #         self.rect.y += self.speed
-        # if self.rect.y == y and self.rect.x == x:
-        #     explode = Explode(x, y)
-        #     effect_group.add(explode)
-        #     missile_group.remove(self)
         missile_dir = pg.math.Vector2(self.pos_list[self.next_pos_index]) - self.pos
         if missile_dir.length() < self.speed:
             self.pos = self.pos_list[self.next_pos_index]
@@ -116,6 +104,7 @@ class Missile(pg.sprite.Sprite):
             self.pos = (new_pos.x, new_pos.y)
         self.rect.x = round(self.pos[0])
         self.rect.y = round(self.pos[1])
+
         if self.rect.y == y and self.rect.x == x:
             explode = Explode(x, y)
             effect_group.add(explode)
