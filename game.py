@@ -132,7 +132,7 @@ class MissileFx(pg.sprite.Sprite):
         if self.size == 0:
             missile_group.remove(self)
         else:
-            self.size -= 5
+            self.size -= 4
             self.image = pg.transform.scale(self.image, (self.size, self.size))
 
 class Explode(pg.sprite.Sprite):
