@@ -8,9 +8,11 @@ from constants import *
 from ai_blue import BlueAi
 from ai_red import RedAi
 pp = pprint.PrettyPrinter(width=41, compact=True)
+
 ##########################################################
 ######################## INIT ############################
 ##########################################################
+
 pg.init()
 map_data = []
 clock = pg.time.Clock()
@@ -70,9 +72,9 @@ for i in range(0, len(map_data)):
 
 def draw_grid():
     for x in range(0, WIDTH, TILESIZE):
-        pg.draw.line(screen, (0, 0, 0, 50), (x, 0), (x, 500))
+        pg.draw.line(screen, BLACK, (x, 0), (x, 500))
     for y in range(0, 500, TILESIZE):
-        pg.draw.line(screen, (0, 0, 0, 50), (0, y), (WIDTH, y))
+        pg.draw.line(screen, BLACK, (0, y), (WIDTH, y))
 
 class Missile(pg.sprite.Sprite):
     def __init__(self, col, row, team, target):
@@ -227,7 +229,7 @@ class Ship(pg.sprite.Sprite):
     def __init__(self, col, row, team, direction):
         pg.sprite.Sprite.__init__(self)
         self.team = team
-        self.image = pg.image.load(path.join('images', 'destroyer.png')).convert_alpha()
+        self.image = pg.image.load(path.join('images', 'ships', 'destroyer.png')).convert_alpha()
         if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
         self.rect.x = col
@@ -245,13 +247,22 @@ class Ship(pg.sprite.Sprite):
         missile_group.add(missile)
         _last_position = (target['x'] - 25, target['y'] - 25)
         _last_result = generate_user_action_result(_last_position, self.team)
+    
+    def update(self):
+        hitted = self.hit_count
+        team = self.team
+        dir = self.direction
+        if hitted != 0:
+            self.image = pg.image.load(path.join('images', 'ships', f'destroyer{hitted}.png')).convert_alpha()
+            if team == 'red': self.image = pg.transform.flip(self.image, True, False)
+            if dir == 'vertical': self.image = pg.transform.rotate(self.image, 90)
 
 class DestoryedShip(pg.sprite.Sprite):
     def __init__(self, col, row, team, direction):
         pg.sprite.Sprite.__init__(self)
         self.team = team
         self.direction = direction
-        self.image = pg.image.load(path.join('images', 'destroyer_destoryed.png')).convert_alpha()
+        self.image = pg.image.load(path.join('images', 'ships', 'destroyer5.png')).convert_alpha()
         if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
         self.rect.x = col
@@ -494,6 +505,8 @@ while not done:
         draw_grid()
         red_ships.draw(screen)
         blue_ships.draw(screen)
+        red_ships.update()
+        blue_ships.update()
         missile_group.draw(screen)
         missile_group.update()
         effect_group.draw(screen)

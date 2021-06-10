@@ -1,8 +1,8 @@
 from ai_super_class import SuperAi
 import random
 
-FILL_YOUR_NAME: str = """FILL_HERE"""
-FOUR_SHIPS_POSITION: list[list[int, int]] = """FILL_HERE"""
+FILL_YOUR_NAME: str = """FILL_ME_IN"""
+FOUR_SHIPS_POSITION: list[list[int, int]] = """FILL_ME_IN"""
 
 class BlueAi(SuperAi):
     def __init__(self, team, Ship):
@@ -13,7 +13,7 @@ class BlueAi(SuperAi):
         self.initial_ships_pos = FOUR_SHIPS_POSITION
 
     def ai_action(self, turn, map):
-        print("""FILL_THIS_METHOD""")
+        print("""FILL_ME_IN""")
 
         
 #! Don't edit global variable / constant or Fn
