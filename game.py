@@ -3,6 +3,7 @@ import sys
 import copy
 import pprint
 import math
+import random
 from os import path
 from constants import *
 from ai_blue import BlueAi
@@ -262,7 +263,7 @@ class DestoryedShip(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.team = team
         self.direction = direction
-        self.image = pg.image.load(path.join('images', 'ships', 'destroyer5.png')).convert_alpha()
+        self.image = pg.image.load(path.join('images', 'ships', f'destroyer{random.randint(5, 6)}.png')).convert_alpha()
         if self.team == 'red': self.image = pg.transform.flip(self.image, True, False)
         self.rect = self.image.get_rect()
         self.rect.x = col
@@ -301,18 +302,41 @@ def map_status_draw(map):
                 new_tile = Sea(i, j)
                 back_group.add(new_tile)
 
+class BlackOut(pg.sprite.Sprite):
+    def __init__(self):
+        pg.sprite.Sprite.__init__(self)
+        self.level = 1
+        self.image = pg.Surface((1200, 700), pg.SRCALPHA)
+        self.image.set_colorkey(BLACK)
+        self.image = self.image.convert_alpha()
+        self.image.fill((0, 0, 0, 90))
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
+    
+    def update(self, mt):
+        global screen_status
+        if self.level == 255:
+            screen_status = 'result'
+        else:
+            self.level += 1
+            self.image.fill((0, 0, 0, self.level))
+
+black = BlackOut()
+
 def winner_checker():
     global win_status
     global blue_ships
     global red_ships
-    global screen_status
     global message_result
     if len(blue_ships.sprites()) == 0:
         win_status = 'RED'
-        screen_status = 'result'
+        black_out = BlackOut()
+        effect_group.add(black_out)
     elif len(red_ships.sprites()) == 0:
         win_status = 'BLUE'
-        screen_status = 'result'
+        black_out = BlackOut()
+        effect_group.add(black_out)
 
 ##########################################################
 ###################### AI INIT ###########################
@@ -350,10 +374,10 @@ next_turn_rect = message_next_turn.get_rect()
 next_turn_rect.centerx = round(WIDTH / 2)
 next_turn_rect.y = 590
 # NEW GAME
-message_new_game = my_font_3.render(NEWGAME, True, WHITE)
-new_game_rect = message_new_game.get_rect()
-new_game_rect.centerx = round(WIDTH / 2)
-new_game_rect.y = 615
+# message_new_game = my_font_3.render(NEWGAME, True, WHITE)
+# new_game_rect = message_new_game.get_rect()
+# new_game_rect.centerx = round(WIDTH / 2)
+# new_game_rect.y = 615
 # QUIT GAME
 message_exit_game = my_font_3.render(ENDGAME, True, WHITE)
 exit_game_rect = message_exit_game.get_rect()
@@ -418,7 +442,7 @@ version_rect.centery = round(HEIGHT - 50)
 
 def draw_text():
     screen.blit(message_title, title_rect)
-    screen.blit(message_new_game, new_game_rect)
+    # screen.blit(message_new_game, new_game_rect)
     message_turn = my_font_3.render(TURN + f'{turn}', True, WHITE)
     screen.blit(message_turn, turn_rect)
     screen.blit(message_next_turn, next_turn_rect)
@@ -464,7 +488,7 @@ while not done:
             if event.key == pg.K_SPACE:
                 if screen_status == 'main':
                     screen_status = 'game'
-                elif screen_status == 'game':
+                elif screen_status == 'game' and len(blue_ships.sprites()) != 0 and len(red_ships.sprites()) != 0:
                     turn += 1
                     print(f'********************************************************')
                     print(f'************************{turn} turn!*************************')
@@ -487,10 +511,10 @@ while not done:
                     winner_checker()
                     map_status_draw(map_data)
                     pp.pprint(map_data)
+                elif screen_status == 'result':
+                    done = True
             elif event.key == pg.K_q:
                 done = True
-            elif event.key == pg.K_n:
-                pg.init()
 
     screen.fill(BLACK)
     
@@ -509,12 +533,12 @@ while not done:
         blue_ships.update()
         missile_group.draw(screen)
         missile_group.update()
-        effect_group.draw(screen)
-        effect_group.update(mt)
         back_group.draw(screen)
         back_group.update(mt)
         wreck_group.draw(screen)
         wreck_group.update()
+        effect_group.draw(screen)
+        effect_group.update(mt)
         pg.display.update()
     elif screen_status == 'result':
         screen = pg.display.set_mode((WIDTH, HEIGHT))
