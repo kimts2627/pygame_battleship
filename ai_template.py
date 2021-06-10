@@ -12,12 +12,30 @@ class BlueAi(SuperAi):
         self.name = FILL_YOUR_NAME
         self.initial_ships_pos = FOUR_SHIPS_POSITION
         self.last_attack_result = self.last_attack_result
-        #* last_attack_result is your attack result list
+
+    def ai_action(self, turn: int, map: list[str]):
+        print('''DELETE_ME''')
+
+        #* <last_attack_result> is your attack result list
         #* ex) [{'result': 'nohit', 'position': (200, 350)}, {'result': 'hit', 'position': (0, 200)}, ... , {'result': 'nohit', 'position': (100, 0)}]
         #* you can lookup result list to use {self.last_attack_result}
 
-    def ai_action(self, turn: int, map: list[str]):
-        print("""FILL_ME_IN""")
+        #* input <turn> is game's current turn.
+        #* it will be increase each trun start time
+
+        #* input <map> is game's current turn.
+        #* ex)  ['ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'
+        #*       'ooooooooooxxxxoooooooooo'] 
+        #* each string char is one map tile. 
+        #* 'x' -> already attacked tile, 'o' -> unknown tile.
 
         
 #! Don't edit global variable / constant or Fn
