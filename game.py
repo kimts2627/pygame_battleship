@@ -322,8 +322,6 @@ class BlackOut(pg.sprite.Sprite):
             self.level += 1
             self.image.fill((0, 0, 0, self.level))
 
-black = BlackOut()
-
 def winner_checker():
     global win_status
     global blue_ships

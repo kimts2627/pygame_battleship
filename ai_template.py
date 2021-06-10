@@ -11,8 +11,12 @@ class BlueAi(SuperAi):
         super().__init__(team, Ship)
         self.name = FILL_YOUR_NAME
         self.initial_ships_pos = FOUR_SHIPS_POSITION
+        self.last_attack_result = self.last_attack_result
+        #* last_attack_result is your attack result list
+        #* ex) [{'result': 'nohit', 'position': (200, 350)}, {'result': 'hit', 'position': (0, 200)}, ... , {'result': 'nohit', 'position': (100, 0)}]
+        #* you can lookup result list to use {self.last_attack_result}
 
-    def ai_action(self, turn, map):
+    def ai_action(self, turn: int, map: list[str]):
         print("""FILL_ME_IN""")
 
         
