@@ -4,6 +4,8 @@ import copy
 import pprint
 import math
 import random
+import asyncio
+import time
 from os import path
 from constants import *
 from ai_blue import BlueAi
@@ -112,31 +114,31 @@ class Missile(pg.sprite.Sprite):
             explode = Explode(x, y)
             effect_group.add(explode)
             missile_group.remove(self)
-        fx = MissileFx(self)
-        missile_group.add(fx)
+        # fx = MissileFx(self)
+        # missile_group.add(fx)
 
-class MissileFx(pg.sprite.Sprite):
-    def __init__(self, parent):
-        pg.sprite.Sprite.__init__(self)
-        self.parent = parent
-        self.x = parent.rect.x
-        self.y = parent.rect.y
-        if parent.team == 'red': self.x = self.x + 70
-        self.image = pg.Surface((self.x, self.y))
-        self.image.fill(GRAY)
-        pg.draw.circle(self.image, GRAY, (self.x // 2, self.y // 2), 5)
-        self.image = pg.transform.scale(self.image, (20, 20))
-        self.rect = self.image.get_rect(centerx = self.x, centery = self.y)
-        self.size = 20
-        self.animation_time = round(100 / 100, 2)
-        self.current_time = 0
+# class MissileFx(pg.sprite.Sprite):
+#     def __init__(self, parent):
+#         pg.sprite.Sprite.__init__(self)
+#         self.parent = parent
+#         self.x = parent.rect.x
+#         self.y = parent.rect.y
+#         if parent.team == 'red': self.x = self.x + 70
+#         self.image = pg.Surface((self.x, self.y))
+#         self.image.fill(GRAY)
+#         pg.draw.circle(self.image, GRAY, (self.x // 2, self.y // 2), 5)
+#         self.image = pg.transform.scale(self.image, (20, 20))
+#         self.rect = self.image.get_rect(centerx = self.x, centery = self.y)
+#         self.size = 20
+#         self.animation_time = round(100 / 100, 2)
+#         self.current_time = 0
     
-    def update(self):
-        if self.size == 0:
-            missile_group.remove(self)
-        else:
-            self.size -= 4
-            self.image = pg.transform.scale(self.image, (self.size, self.size))
+#     def update(self):
+#         if self.size == 0:
+#             missile_group.remove(self)
+#         else:
+#             self.size -= 4
+#             self.image = pg.transform.scale(self.image, (self.size, self.size))
 
 class Explode(pg.sprite.Sprite):
     def __init__(self, col, row):
@@ -258,6 +260,27 @@ class Ship(pg.sprite.Sprite):
             if team == 'red': self.image = pg.transform.flip(self.image, True, False)
             if dir == 'vertical': self.image = pg.transform.rotate(self.image, 90)
 
+class ExplosiveFx(pg.sprite.Sprite):
+    def __init__(self, parent):
+        pg.sprite.Sprite.__init__(self)
+        self.parent = parent
+        self.image = pg.image.load(path.join('images', 'dead', f'bomb1.png')).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.rect.centerx = self.parent.rect.centerx - round(self.rect.width / 10)
+        self.rect.centery = self.parent.rect.centery - round(self.rect.height / 2)
+        self.current_img = 1.0
+
+    def update(self, mt):
+        if self.current_img == 30.0:
+            effect_group.remove(self)
+        else:
+            self.current_img += 0.25
+            if self.current_img % 1 == 0:
+                self.image = pg.image.load(path.join('images', 'dead', f'bomb{int(self.current_img)}.png')).convert_alpha()
+                self.rect = self.image.get_rect()   
+                self.rect.centerx = self.parent.rect.centerx - round(self.rect.width / 10)
+                self.rect.centery = self.parent.rect.centery - round(self.rect.height / 2)
+
 class DestoryedShip(pg.sprite.Sprite):
     def __init__(self, col, row, team, direction):
         pg.sprite.Sprite.__init__(self)
@@ -268,10 +291,11 @@ class DestoryedShip(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = col
         self.rect.y = row
+        self.fx = ExplosiveFx(self)
+        effect_group.add(self.fx)
         if self.direction == 'vertical': self.image = pg.transform.rotate(self.image, 90)
         
 def ship_hit_checker(blue_group, red_group):
-    global mini_map
     blues = blue_group.sprites()
     reds = red_group.sprites()
     for i in blues:
@@ -543,7 +567,6 @@ while not done:
         screen.fill(BLACK)
         draw_result_text()
         pg.display.update()
-
 
 pg.quit()
 sys.exit()
