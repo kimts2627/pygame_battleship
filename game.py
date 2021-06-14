@@ -4,8 +4,7 @@ import copy
 import pprint
 import math
 import random
-import asyncio
-import time
+from itertools import repeat
 from os import path
 from constants import *
 from ai_blue import BlueAi
@@ -25,9 +24,12 @@ _last_result = 'no'
 win_status = ''
 screen_status = 'main'
 
-screen = pg.display.set_mode((WIDTH, HEIGHT))
+org_screen = pg.display.set_mode((WIDTH, HEIGHT))
+screen = org_screen.copy()
+screen_rect = screen.get_rect()
 background = pg.image.load('images/background.jpeg')
 pg.display.set_caption('BATTLE-SHIP')
+offset = repeat((0, 0))
 
 back_group = pg.sprite.Group()
 red_ships = pg.sprite.Group()
@@ -39,6 +41,17 @@ wreck_group = pg.sprite.Group()
 ##########################################################
 ################### CLASS & FUNCTIONS ####################
 ##########################################################
+
+def shake():
+    s = -1
+    for _ in range(0, 3):
+        for x in range(0, 20, 5):
+            yield (x * s, 0)
+        for x in range(20, 0, 5):
+            yield (x * s, 0)
+        s *= -1
+    while True:
+        yield (0, 0)
 
 class Blank(pg.sprite.Sprite):
     def __init__(self, col, row):
@@ -298,17 +311,20 @@ class DestoryedShip(pg.sprite.Sprite):
 def ship_hit_checker(blue_group, red_group):
     blues = blue_group.sprites()
     reds = red_group.sprites()
+    global offset
     for i in blues:
         if i.hit_count == 5:
             wreck = DestoryedShip(i.rect.x, i.rect.y, i.team, i.direction)
             wreck_group.add(wreck)
             blue_group.remove(i)
+            offset = shake()
             print('blue team ship is sink down!')
     for i in reds:
         if i.hit_count == 5:
             wreck = DestoryedShip(i.rect.x, i.rect.y, i.team, i.direction)
             wreck_group.add(wreck)
             red_group.remove(i)
+            offset = shake()
             print('red team ship is sink down!')
 
 def map_status_draw(map):
@@ -541,10 +557,11 @@ while not done:
     screen.fill(BLACK)
     
     if screen_status == 'main':
-        screen.blit(background, (0, -176))
+        screen.blit(background, (0, -176)) 
         draw_main_text()
-        pg.display.update()
     elif screen_status == 'game':
+        org_screen.fill(BLACK)
+        screen.fill(BLACK)
         screen.blit(background, (0, -176))
         mt = 0.06
         draw_text()
@@ -561,12 +578,12 @@ while not done:
         wreck_group.update()
         effect_group.draw(screen)
         effect_group.update(mt)
-        pg.display.update()
+        org_screen.blit(screen, next(offset))
     elif screen_status == 'result':
         screen = pg.display.set_mode((WIDTH, HEIGHT))
         screen.fill(BLACK)
         draw_result_text()
-        pg.display.update()
+    pg.display.flip()
 
 pg.quit()
 sys.exit()
